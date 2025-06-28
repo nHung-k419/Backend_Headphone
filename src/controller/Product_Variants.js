@@ -1,5 +1,6 @@
 import { ProductVariants } from "../models/Product_Variants.js";
-import { v2 as cloudinary } from "cloudinary";
+import pkg from 'cloudinary';
+const { v2: cloudinary } = pkg;
 const createProductVariants = async (req, res) => {
   try {
     const { Color, Size, Stock, Id_Products } = req.body;
@@ -21,7 +22,22 @@ const createProductVariants = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-const getProductVariants = async (req, res) => {
+const getProductVariantsByid = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const resultVariantByid = await ProductVariants.find({ Id_Products: id });
+    // console.log(resultVariantByid);
+    
+    if (resultVariantByid) {
+      return res.status(200).json({ resultVariantByid });
+    }
+    return res.status(404).json({ message: "Not founded product Variants" });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+const GetAllProductVariants = async (req,res) => {
   try {
     const getAllProductVariants = await ProductVariants.find();
     if (getAllProductVariants) {
@@ -31,7 +47,8 @@ const getProductVariants = async (req, res) => {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
-};
+}
+
 const deleteProductVariants = async (req, res) => {
   const { id } = req.params;
   try {
@@ -87,4 +104,4 @@ const updateProductVariants = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-export { createProductVariants, getProductVariants, deleteProductVariants, updateProductVariants };
+export { createProductVariants, getProductVariantsByid, deleteProductVariants, updateProductVariants,GetAllProductVariants };
