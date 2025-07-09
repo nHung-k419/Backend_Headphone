@@ -27,7 +27,7 @@ const getOrder = async (req, res) => {
 
 const CreateOrder = async (req, res) => {
   let TotalAmount = 0;
-  const { Id_Cart, idUser, Sex, Phone, Fullname, CCCD, Address, PaymentMethod } = req.body;
+  const { Id_Cart, idUser, Phone, Fullname, Address, PaymentMethod } = req.body;
   try {
     const CartItemsOrder = await CartItems.find({ Id_Cart: Id_Cart }).populate("Id_Product");
     const resultFind = await Cart.findOne({ Id_User: idUser });
@@ -38,7 +38,8 @@ const CreateOrder = async (req, res) => {
         return sum;
       }, 0);
     }
-    const resultCreate = new Order({ Id_Cart, Id_User: idUser, Fullname, Sex, Phone, CCCD, TotalAmount, PaymentMethod, Address });
+
+    const resultCreate = new Order({ Id_Cart, Id_User: idUser, Fullname, Phone, TotalAmount, PaymentMethod, Address });
 
     await resultCreate.save();
     const OrderItemsDate = CartItemsOrder.map((item) => ({
@@ -51,7 +52,7 @@ const CreateOrder = async (req, res) => {
       Quantity: item.Quantity,
     }));
     await OrderItems.insertMany(OrderItemsDate);
-    await CartItems.deleteMany({ Id_Cart: Id_Cart });
+    // await CartItems.deleteMany({ Id_Cart: Id_Cart });
     return res.status(200).json({ resultCreate });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -59,11 +60,12 @@ const CreateOrder = async (req, res) => {
 };
 const paymentWithZalopay = async (req, res) => {
   let total = 0;
-  const { Id_Cart, Id_User, Sex, Phone, Fullname, CCCD, Address, _id, PaymentMethod } = req.body;
-  const items = [{ Id_Cart, Id_User, Sex, Phone, Fullname, CCCD, Address, PaymentMethod, _id }];
+  const { Id_Cart, Id_User, Phone, Fullname, Address, _id, PaymentMethod } = req.body;
+  const items = [{ Id_Cart, Id_User, Phone, Fullname, Address, PaymentMethod, _id }];
   const embed_data = {
     redirecturl: "http://localhost:5173/OrderItems",
   };
+  // console.log(items);
 
   const result = await Cart.findOne({ Id_User: Id_User });
   if (result) {
@@ -72,6 +74,9 @@ const paymentWithZalopay = async (req, res) => {
       sum += item.Quantity * item?.Id_Product?.Price;
       return sum;
     }, 0);
+  }
+  if (total > 0) {
+    await CartItems.deleteMany({ Id_Cart: Id_Cart });
   }
 
   const transID = Math.floor(Math.random() * 1000000);
@@ -85,7 +90,7 @@ const paymentWithZalopay = async (req, res) => {
     amount: total,
     description: `Zalo - Payment for the Headphone #${transID}`,
     bank_code: "",
-    callback_url: "https://20cb-42-115-181-237.ngrok-free.app/api/CallbackOrder",
+    callback_url: "https://128a74385527.ngrok-free.app/api/CallbackOrder",
   };
   const data =
     config.app_id +
@@ -119,15 +124,15 @@ const Callback = async (req, res, next) => {
     let mac = CryptoJS.HmacSHA256(dataStr, config.key2).toString();
     // console.log("mac =", mac);
 
-    // kiểm tra callback hợp lệ (đến từ ZaloPay server)
+    // check callback valid (from to ZaloPay server)
     if (reqMac !== mac) {
-      // callback không hợp lệ
+      // callback not valid
       result.return_code = -1;
       result.return_message = "mac not equal";
       return req.json({ message: "Paytment not success" });
     } else {
-      // thanh toán thành công
-      // merchant cập nhật trạng thái cho đơn hàng
+      // payment success
+      // merchant update status in order
       let dataJson = JSON.parse(dataStr, config.key2);
       // console.log("dataJson", dataJson);
 
@@ -139,24 +144,109 @@ const Callback = async (req, res, next) => {
       result.return_message = "success";
     }
   } catch (ex) {
-    result.return_code = 0; // ZaloPay server sẽ callback lại (tối đa 3 lần)
+    result.return_code = 0; // ZaloPay server will call again three times ( maximum 3 times )
     result.return_message = ex.message;
   }
-
-  // thông báo kết quả cho ZaloPay server
+  // notify result to ZaloPay
   res.json(result);
 };
 
 const getOrderItems = async (req, res) => {
   const { Id_User } = req.params;
+  const { status } = req.body;
+  console.log(status);
+
+  const query = Id_User && status !== "Đơn hàng" ? { Id_User, Status: status } : {};
+
   try {
-    const findOrder = await Order.findOne({ Id_User: Id_User });
-    const OrderItemsProduct = await OrderItems.find({ Id_Order: findOrder._id }).populate("Id_Product").populate("Id_Order");
-    return res.status(200).json({ OrderItemsProduct });
+    const userOrders = await Order.find(query).sort({ createdAt: -1 });
+    // console.log('userOrders',userOrders);
+
+    if (userOrders.length === 0) {
+      return res.status(404).json({ message: "No orders found" });
+    }
+    const allOrderItems = await Promise.all(
+      userOrders.map(async (order) => {
+        const items = await OrderItems.find({ Id_Order: order._id }).populate("Id_Product").populate("Id_Order");
+        return {
+          orderInfo: order,
+          items,
+        };
+      })
+    );
+
+    setTimeout(() => {
+      return res.status(200).json({ allOrderItems });
+    }, 2000);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 };
-export { getOrder, CreateOrder, paymentWithZalopay, Callback,getOrderItems };
+
+const getAddressOrder = async (req, res) => {
+  const { Id_User } = req.params;
+  try {
+    const findAdressOrder = await Order.findOne({ Id_User: Id_User }).sort({ createdAt: -1 });
+    return res.status(200).json({ findAdressOrder });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+const getStatusOrder = async (req, res) => {
+  const { status } = req.params;
+  try {
+    const findStatusOrder = await Order.find({ Status: status }).sort({ createdAt: -1 });
+    return res.status(200).json({ findStatusOrder });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+const GetAllOrder = async (req, res) => {
+  try {
+    const getAllOrder = await Order.find().sort({ createdAt: -1 });
+    if (getAllOrder) {
+      return res.status(200).json({ getAllOrder });
+    }
+    return res.status(404).json({ message: "Not founded order" });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+const GetAllOrderItems = async (req, res) => {
+  try {
+    const getAllOrderItems = await OrderItems.find().sort({ createdAt: -1 }).populate("Id_Order").populate("Id_Product");
+    if (getAllOrderItems) {
+      return res.status(200).json({ getAllOrderItems });
+    }
+    return res.status(404).json({ message: "Not founded order" });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+const updateStatusOrder = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  try {
+    if (status === "Xác nhận") {
+      const result = await Order.updateOne({ _id: id }, { $set: { Status: "Chờ giao hàng" } });
+      return res.status(200).json({ result });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+export {
+  getOrder,
+  CreateOrder,
+  paymentWithZalopay,
+  Callback,
+  getOrderItems,
+  getAddressOrder,
+  GetAllOrder,
+  GetAllOrderItems,
+  updateStatusOrder,
+};
 
 // Headphone.mac = CryptoJS.HmacSHA256(data, config.key1).toString();

@@ -9,7 +9,7 @@ const OrderSchemma = new mongoose.Schema({
   TotalAmount: { type: Number },
   PaymentMethod: { type: String, default: "COD" },
   Address: { type: String },
-  Status: { type: String, default: "Đang chờ" },
+  Status: { type: String, default: "Chờ xác nhận" },
   CreateAt: { type: Date, default: Date.now() },
 });
 const Order = mongoose.model("Order", OrderSchemma);

@@ -19,8 +19,10 @@ import {
 } from "../controller/Product_Variants.js";
 import { GetAllBrand, AddBrand, UpdateBrand, DeleteBrand } from "../controller/Brand.Comtroller.js";
 import { Register, Login, createAccessToken, createRefreshToken, RefreshToken, Logout } from "../controller/Auth.Controller.js";
-import { AddCart,GetCartByUser,handlePrevious,handleNext,handleDlCartItem } from "../controller/Cart.Controller.js";
-import { getOrder,CreateOrder,paymentWithZalopay,Callback,getOrderItems } from "../controller/Order.Controller.js";
+import { AddCart, GetCartByUser, handlePrevious, handleNext, handleDlCartItem } from "../controller/Cart.Controller.js";
+import { getOrder, CreateOrder, paymentWithZalopay, Callback, getOrderItems, getAddressOrder,GetAllOrder,GetAllOrderItems,updateStatusOrder } from "../controller/Order.Controller.js";
+import { sendImageComment,getReviewsById } from "../controller/Reviews.Controller.js";
+import { CreateCommentLike,getLikeComment } from "../controller/CommentLike.controller.js";
 import VerifyAuth from "../middleWare/Verify.js";
 import uploadCloud from "../config/CloudinaryConfig.js";
 const router = express.Router();
@@ -65,15 +67,25 @@ router.get("/GetDetailProduct/:id", GetDetailProduct);
 
 // Cart Route
 router.post("/AddCart/:idUser", AddCart);
-router.post("/GetCart/:idUser",GetCartByUser );
-router.post("/Previous",handlePrevious );
-router.post("/Next",handleNext );
-router.post("/DeleteCartItem",handleDlCartItem );
+router.post("/GetCart/:idUser", GetCartByUser);
+router.post("/Previous", handlePrevious);
+router.post("/Next", handleNext);
+router.post("/DeleteCartItem", handleDlCartItem);
 
-// Order Route 
+// Order Route
 router.get("/GetOrder/:idUser", getOrder);
+router.get("/GetAllOrder", GetAllOrder);
 router.post("/CreateOrder", CreateOrder);
-router.get("/GetOrderItems/:Id_User", getOrderItems);
+router.post("/GetOrderItems/:Id_User", getOrderItems);
+router.get("/GetAllOrderItems", GetAllOrderItems);
+router.put("/UpdateStatusOrder/:id", updateStatusOrder);
 router.post("/OrderPaymentZalo", paymentWithZalopay);
 router.post("/CallbackOrder", Callback);
+router.get("/GetAddressOrder/:Id_User", getAddressOrder);
+
+router.post("/sendImageComment", uploadCloud.array("Images"), sendImageComment);
+router.get("/getReviewsById/:idProduct", getReviewsById);
+
+router.post("/CreateCommentLike", CreateCommentLike);
+router.get("/getLikeComment/:UserId", getLikeComment);
 export default router;
