@@ -205,7 +205,7 @@ const getStatusOrder = async (req, res) => {
 
 const GetAllOrder = async (req, res) => {
   try {
-    const getAllOrder = await Order.find().sort({ createdAt: -1 });
+    const getAllOrder = await Order.find({}).sort({ createdAt: -1 });
     if (getAllOrder) {
       return res.status(200).json({ getAllOrder });
     }
