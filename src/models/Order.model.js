@@ -11,6 +11,8 @@ const OrderSchemma = new mongoose.Schema({
   Address: { type: String },
   Status: { type: String, default: "Chờ xác nhận" },
   CreateAt: { type: Date, default: Date.now() },
+  StatusPayment : {type : String, default : "Chưa thanh toán"},
+  Email : {type : String},
 });
 const Order = mongoose.model("Order", OrderSchemma);
 export { Order };

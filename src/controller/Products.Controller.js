@@ -1,5 +1,7 @@
 import { Products } from "../models/Product.model.js";
-import pkg from 'cloudinary';
+import { ProductVariants } from "../models/Product_Variants.js";
+import { Reviews } from "../models/Reviews.model.js";
+import pkg from "cloudinary";
 const { v2: cloudinary } = pkg;
 
 const createProduct = async (req, res) => {
@@ -39,6 +41,7 @@ const getProduct = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
 const getProductPageNavigation = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -116,7 +119,11 @@ const updateProduct = async (req, res) => {
 const GetDetailProduct = async (req, res) => {
   try {
     const { id } = req.params;
+    // const {idVariant} = req.query
+    // console.log(idVariant);
+
     const result = await Products.findOne({ _id: id });
+    // const result = await ProductVariants.findOne({ Id_Products: id }).populate("Id_Products");
     if (result) {
       return res.status(200).json({ result });
     }
@@ -132,12 +139,17 @@ const getProductFilter = async (req, res) => {
     const idBrand = req.query.idBrand;
     const valuePrice = parseFloat(req.query.valuePrice);
     const keyWord = req.query.keyWord;
-    console.log(keyWord);
+    const type = req.query.type;
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
     const skip = (page - 1) * limit;
-    const filter = {};
+    let filter = {};
+    let sort = {};
+    if (type === "Mới nhất") sort = { createdAt: -1 };
+    if (type === "Phổ biến") filter.Sold = { $gt: 0 };
+    if (type === "Tất cả") filter = {};
+
     if (idBrand) filter.Brand = idBrand;
     if (idCategory) filter.Id_Category = idCategory;
     if (!isNaN(valuePrice)) {
@@ -146,10 +158,12 @@ const getProductFilter = async (req, res) => {
     if (keyWord) {
       filter.Name = { $regex: keyWord, $options: "i" };
     }
+
     // console.log(filter);
-    const products = await Products.find(filter).skip(skip).limit(limit);
+    const products = await Products.find(filter).sort(sort).skip(skip).limit(limit);
     const total = await Products.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
+
     return res.json({ products, total, totalPages, currentPage: page });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -169,6 +183,54 @@ const SearchProducts = async (req, res) => {
   }
 };
 
+const productBestSeller = async (req, res) => {
+  try {
+    const result = await ProductVariants.find({ Sold: { $gt: 0 } })
+      .populate({
+        path: "Id_Products",
+        model: "Product",
+      })
+      .sort({ Sold: -1 })
+      .limit(20);
+    const AllProductSellerReviews = await Promise.all(
+      result.map(async (item) => {
+        const reviews = await Reviews.find({ Id_Product: item.Id_Products._id });
+        return{
+          item,
+          reviews
+        }
+      })
+    );
+    return res.status(200).json({ AllProductSellerReviews });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+const newProduct = async (req, res) => {
+  try {
+    const result = await Products.find().sort({ createdAt: -1 }).limit(4);
+    return res.status(200).json({ result });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// const selectTypeProduct = async (req, res) => {
+//   try {
+//     const { type } = req.params;
+//     let result;
+//     if (type === "Mới nhất") {
+//       result = await Products.find().sort({ createdAt: -1 });
+//     } else if (type === "Phổ biến") {
+//       result = await Products.find({Sold : {$gt: 0}})
+//     }
+//     return res.status(200).json({ result });
+//   } catch (error) {
+//     return res.status(500).json({ error: error.message });
+//   }
+// };
+
 export {
   createProduct,
   getProduct,
@@ -178,4 +240,7 @@ export {
   getProductPageNavigation,
   getProductFilter,
   SearchProducts,
+  productBestSeller,
+  newProduct,
+  // selectTypeProduct,
 };

@@ -1,13 +1,16 @@
 import express, { Router } from "express";
 import {
   createProduct,
-  getProduct,
   deleteProduct,
   updateProduct,
   GetDetailProduct,
   getProductPageNavigation,
   getProductFilter,
   SearchProducts,
+  productBestSeller,
+  newProduct,
+  getProduct,
+  // selectTypeProduct
 } from "../controller/Products.Controller.js";
 import { GetAllCategory, AddCategory, UpdateCategory, DeleteCategory } from "../controller/Category.Controller.js";
 import {
@@ -16,6 +19,8 @@ import {
   deleteProductVariants,
   updateProductVariants,
   GetAllProductVariants,
+  updateStockProduct,
+  
 } from "../controller/Product_Variants.js";
 import { GetAllBrand, AddBrand, UpdateBrand, DeleteBrand } from "../controller/Brand.Comtroller.js";
 import { Register, Login, createAccessToken, createRefreshToken, RefreshToken, Logout } from "../controller/Auth.Controller.js";
@@ -23,17 +28,21 @@ import { AddCart, GetCartByUser, handlePrevious, handleNext, handleDlCartItem } 
 import { getOrder, CreateOrder, paymentWithZalopay, Callback, getOrderItems, getAddressOrder,GetAllOrder,GetAllOrderItems,updateStatusOrder } from "../controller/Order.Controller.js";
 import { sendImageComment,getReviewsById } from "../controller/Reviews.Controller.js";
 import { CreateCommentLike,getLikeComment } from "../controller/CommentLike.controller.js";
+import { handleChat } from "../controller/Chatbot.Controller.js";
 import VerifyAuth from "../middleWare/Verify.js";
 import uploadCloud from "../config/CloudinaryConfig.js";
 const router = express.Router();
 // Product Route
 router.post("/CreateProduct", VerifyAuth, uploadCloud.single("ImageUrl"), createProduct);
-router.get("/GetAllProduct", VerifyAuth, getProduct);
 router.get("/Products", getProductPageNavigation);
 router.delete("/DeleteProduct/:id", VerifyAuth, deleteProduct);
 router.put("/UpdateProduct/:id", VerifyAuth, uploadCloud.single("ImageUrl"), updateProduct);
 router.get("/GetProductFilter", getProductFilter);
 router.get("/SearchProducts", SearchProducts);
+router.get("/productBestSeller", productBestSeller);
+router.get("/newProduct", newProduct);
+router.get("/GetAllProduct", getProduct);
+// router.get("/selectTypeProduct/:type", selectTypeProduct);
 
 // Category Route
 router.get("/GetAllCategory", GetAllCategory);
@@ -45,8 +54,11 @@ router.put("/UpdateCategory/:id", VerifyAuth, UpdateCategory);
 router.post("/CreateProductVariants", VerifyAuth, uploadCloud.single("Image"), createProductVariants);
 router.get("/GetProductVariantsByid/:id", getProductVariantsByid);
 router.get("/GetAllProductVariants", VerifyAuth, GetAllProductVariants);
+// router.get("/GetStockVariants", getStockVariant);
 router.delete("/DeleteProductVariants/:id", VerifyAuth, deleteProductVariants);
 router.put("/UpdateProductVariants/:id", VerifyAuth, uploadCloud.single("Image"), updateProductVariants);
+router.get("/GetAllProductVariants", VerifyAuth, GetAllProductVariants);
+router.put("/updateStockProduct/:id", updateStockProduct);
 
 // Brand Route Admin
 router.get("/GetAllBrand", GetAllBrand);
@@ -88,4 +100,7 @@ router.get("/getReviewsById/:idProduct", getReviewsById);
 
 router.post("/CreateCommentLike", CreateCommentLike);
 router.get("/getLikeComment/:UserId", getLikeComment);
+
+// chat Ai
+router.post("/chat", handleChat);
 export default router;

@@ -2,9 +2,13 @@ import { Order } from "../models/Order.model.js";
 import { CartItems } from "../models/Cart_items.model.js";
 import { Cart } from "../models/Cart.model.js";
 import { OrderItems } from "../models/OrderItems.model.js";
+import { Products } from "../models/Product.model.js";
+import { Users } from "../models/User.model.js";
+import { mailAcceptOrder } from "../services/AcceptOrder.js";
 import moment from "moment";
 import CryptoJS from "crypto-js";
 import axios from "axios";
+import { ProductVariants } from "../models/Product_Variants.js";
 const config = {
   app_id: "2554",
   key1: "sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn",
@@ -17,7 +21,14 @@ const getOrder = async (req, res) => {
     // get cart by id user
     const result = await Cart.findOne({ Id_User: idUser });
     if (result) {
-      const resultOrder = await CartItems.find({ Id_Cart: result._id }).populate("Id_Product");
+      const resultOrder = await CartItems.find({ Id_Cart: result._id }).populate({
+        path: "Id_ProductVariants",
+        model: "ProductVariants",
+        populate: {
+          path: "Id_Products",
+          model: "Product",
+        },
+      });
       return res.status(200).json({ resultOrder });
     }
   } catch (error) {
@@ -27,32 +38,53 @@ const getOrder = async (req, res) => {
 
 const CreateOrder = async (req, res) => {
   let TotalAmount = 0;
-  const { Id_Cart, idUser, Phone, Fullname, Address, PaymentMethod } = req.body;
+  const { Id_Cart, idUser, Phone, Fullname, Address, PaymentMethod, Email } = req.body;
+  // console.log("Email", Email);
+
   try {
-    const CartItemsOrder = await CartItems.find({ Id_Cart: Id_Cart }).populate("Id_Product");
+    const CartItemsOrder = await CartItems.find({ Id_Cart: Id_Cart }).populate({
+      path: "Id_ProductVariants",
+      model: "ProductVariants",
+      populate: {
+        path: "Id_Products",
+        model: "Product",
+      },
+    });
     const resultFind = await Cart.findOne({ Id_User: idUser });
     if (resultFind) {
       // const resultOrder = await CartItems.find({ Id_Cart: resultFind._id }).populate("Id_Product");
       TotalAmount = CartItemsOrder.reduce((sum, item) => {
-        sum += item.Quantity * item?.Id_Product?.Price;
+        sum += item.Quantity * item?.Id_ProductVariants?.Price;
         return sum;
       }, 0);
     }
 
-    const resultCreate = new Order({ Id_Cart, Id_User: idUser, Fullname, Phone, TotalAmount, PaymentMethod, Address });
-
+    const resultCreate = new Order({ Id_Cart, Id_User: idUser, Fullname, Phone, TotalAmount, PaymentMethod, Address, Email });
     await resultCreate.save();
     const OrderItemsDate = CartItemsOrder.map((item) => ({
       Id_Order: resultCreate._id,
-      Id_Product: item.Id_Product._id,
-      Name: item.Id_Product.Name,
-      Image: item.Image ? item.Image : item.Id_Product.ImageUrl.path,
+      Id_ProductVariants: item.Id_ProductVariants._id,
+      Name: item?.Id_ProductVariants?.Id_Products?.Name,
+      Image: item.Image,
       Size: item.Size,
+      Price: item.Price,
       Color: item.Color,
       Quantity: item.Quantity,
     }));
+
+    // console.log("OrderItemsDate", OrderItemsDate);
+
     await OrderItems.insertMany(OrderItemsDate);
-    // await CartItems.deleteMany({ Id_Cart: Id_Cart });
+
+    for (const items of CartItemsOrder) {
+      await ProductVariants.updateOne({ _id: items.Id_ProductVariants._id }, { $inc: { Stock: -items.Quantity, Sold: items.Quantity } });
+    }
+
+    if (PaymentMethod === "COD") {
+      await CartItems.deleteMany({ Id_Cart: Id_Cart });
+      await mailAcceptOrder(Email, Fullname, resultCreate._id, resultCreate.CreateAt, OrderItemsDate, resultCreate.TotalAmount);
+    }
+
     return res.status(200).json({ resultCreate });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -60,8 +92,9 @@ const CreateOrder = async (req, res) => {
 };
 const paymentWithZalopay = async (req, res) => {
   let total = 0;
-  const { Id_Cart, Id_User, Phone, Fullname, Address, _id, PaymentMethod } = req.body;
-  const items = [{ Id_Cart, Id_User, Phone, Fullname, Address, PaymentMethod, _id }];
+  const { Id_Cart, Id_User, Phone, Fullname, Address, _id, PaymentMethod, Email } = req.body;
+  const items = [{ Id_Cart, Id_User, Phone, Fullname, Address, PaymentMethod, _id, Email }];
+
   const embed_data = {
     redirecturl: "http://localhost:5173/OrderItems",
   };
@@ -69,15 +102,15 @@ const paymentWithZalopay = async (req, res) => {
 
   const result = await Cart.findOne({ Id_User: Id_User });
   if (result) {
-    const resultOrder = await CartItems.find({ Id_Cart: result._id }).populate("Id_Product");
+    const resultOrder = await CartItems.find({ Id_Cart: result._id }).populate("Id_ProductVariants");
     total = resultOrder.reduce((sum, item) => {
-      sum += item.Quantity * item?.Id_Product?.Price;
+      sum += item.Quantity * item?.Id_ProductVariants?.Price;
       return sum;
     }, 0);
   }
-  if (total > 0) {
-    await CartItems.deleteMany({ Id_Cart: Id_Cart });
-  }
+  // if (total > 0) {
+  //   await CartItems.deleteMany({ Id_Cart: Id_Cart });
+  // }
 
   const transID = Math.floor(Math.random() * 1000000);
   const Headphone = {
@@ -90,7 +123,7 @@ const paymentWithZalopay = async (req, res) => {
     amount: total,
     description: `Zalo - Payment for the Headphone #${transID}`,
     bank_code: "",
-    callback_url: "https://128a74385527.ngrok-free.app/api/CallbackOrder",
+    callback_url: "https://84a27c362b41.ngrok-free.app/api/CallbackOrder",
   };
   const data =
     config.app_id +
@@ -134,12 +167,23 @@ const Callback = async (req, res, next) => {
       // payment success
       // merchant update status in order
       let dataJson = JSON.parse(dataStr, config.key2);
-      // console.log("dataJson", dataJson);
 
       console.log("update ticket's status = success where app_trans_id =", dataJson["app_trans_id"]);
       const data = JSON.parse(dataJson.item);
-      // console.log("data", data);
-      const result = await Order.updateOne({ _id: data[0]._id }, { $set: { Status: "Đã thanh toán" } });
+      // delete cartitem after callback succes
+      await CartItems.deleteMany({ Id_Cart: data[0].Id_Cart });
+      //  update status Order after callback success
+      const result = await Order.updateOne({ _id: data[0]._id }, { $set: { StatusPayment: "Đã thanh toán" } });
+      // send mail after order success
+      const orderitems = await OrderItems.find({ Id_Order: data[0]._id }).populate("Id_Order");
+      await mailAcceptOrder(
+        data[0].Email,
+        data[0].Fullname,
+        orderitems.Id_Order._id,
+        resultCreate.Id_Order.CreateAt,
+        orderitems,
+        resultCreate.Id_Order.TotalAmount
+      );
       result.return_code = 1;
       result.return_message = "success";
     }
@@ -154,12 +198,12 @@ const Callback = async (req, res, next) => {
 const getOrderItems = async (req, res) => {
   const { Id_User } = req.params;
   const { status } = req.body;
-  console.log(status);
+  // console.log(status);
 
-  const query = Id_User && status !== "Đơn hàng" ? { Id_User, Status: status } : {};
+  const query = Id_User && status !== "Đơn hàng" ? { Id_User, Status: status } : { Id_User };
 
   try {
-    const userOrders = await Order.find(query).sort({ createdAt: -1 });
+    const userOrders = await Order.find(query).sort({ CreateAt: -1 });
     // console.log('userOrders',userOrders);
 
     if (userOrders.length === 0) {
@@ -167,13 +211,21 @@ const getOrderItems = async (req, res) => {
     }
     const allOrderItems = await Promise.all(
       userOrders.map(async (order) => {
-        const items = await OrderItems.find({ Id_Order: order._id }).populate("Id_Product").populate("Id_Order");
+        const items = await OrderItems.find({ Id_Order: order._id }).populate({
+          path: "Id_ProductVariants",
+          model: "ProductVariants",
+          populate: {
+            path: "Id_Products",
+            model: "Product",
+          },
+        });
         return {
           orderInfo: order,
           items,
         };
       })
     );
+    // console.log("allOrderItems", allOrderItems[0].orderInfo);
 
     setTimeout(() => {
       return res.status(200).json({ allOrderItems });
@@ -205,7 +257,7 @@ const getStatusOrder = async (req, res) => {
 
 const GetAllOrder = async (req, res) => {
   try {
-    const getAllOrder = await Order.find({}).sort({ createdAt: -1 });
+    const getAllOrder = await Order.find({}).sort({ CreateAt: -1 });
     if (getAllOrder) {
       return res.status(200).json({ getAllOrder });
     }
@@ -232,6 +284,13 @@ const updateStatusOrder = async (req, res) => {
     if (status === "Xác nhận") {
       const result = await Order.updateOne({ _id: id }, { $set: { Status: "Chờ giao hàng" } });
       return res.status(200).json({ result });
+    } else if (status === "Đã giao") {
+      const result = await Order.findOne({ _id: id });
+      if (result.Status === "Chờ giao hàng") {
+        const result = await Order.updateOne({ _id: id }, { $set: { Status: "Đã giao" } });
+        return res.status(200).json({ "update status": "success" });
+      }
+      return res.status(400).json({ "update status": "fail" });
     }
   } catch (error) {
     return res.status(500).json({ error: error.message });

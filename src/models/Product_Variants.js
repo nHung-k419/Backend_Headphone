@@ -4,8 +4,10 @@ const ProductVariantsModel = new mongoose.Schema({
   Color: { type: String, required: true },
   Size: { type: String, required: true },
   Image: { type: Object, required: true },
+  Price: { type: Number, required: true },
   Stock: { type: Number },
-  Id_Products: { type: String },
+  Sold : {type : Number, default : 0},
+  Id_Products: { type: String, ref: "Product", required: true },
   CreateAt: { type: Date, default: Date.now() },
 });
 

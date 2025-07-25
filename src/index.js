@@ -5,13 +5,16 @@ import dotenv from "dotenv";
 import connectDB from "./config/connectDB.js";
 import router from "./routes/index.js";
 import cookieParser from "cookie-parser";
-import { createServer } from "http"; 
+import { createServer } from "http";
 import { initSocket } from "./socket/socket.js";
+import { OrderItems } from "./models/OrderItems.model.js";
+import { ProductVariants } from "./models/Product_Variants.js";
 dotenv.config();
 
 const app = express();
-const httpServer = createServer(app);        // 👈 Tạo HTTP server từ Express
+const httpServer = createServer(app); // 👈 Tạo HTTP server từ Express
 const io = initSocket(httpServer);
+
 // Setup Socket.IO
 // const io = new Server(httpServer, {
 //   cors: {
@@ -56,9 +59,8 @@ connectDB().then(() => {
     console.log(`🚀 Server is running on port ${PORT}`);
   });
 });
-
-
-
+// const reuslt = await ProductVariants.updateMany({ Sold: { $exists: false } }, { $set: { Sold: 0 } });
+// console.log(reuslt);
 
 // import express from "express";
 // import mongoose from "mongoose";

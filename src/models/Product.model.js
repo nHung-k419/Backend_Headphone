@@ -10,8 +10,8 @@ const Product_Model = new mongoose.Schema({
   StockQuantity: { type: Number, default: 0 },
   Rating: { type: Number, default: 0 },
   Id_Category: { type: String, required: true },
-  // Id_Products_variants : {type : Array, default : []},
-  isDelete : {type : Boolean, default : false},
+  Sold: { type: Number, default: 0 },
+  isDelete: { type: Boolean, default: false },
   CreateAt: { type: Date, default: Date.now() },
 });
 const Products = mongoose.model("Product", Product_Model);

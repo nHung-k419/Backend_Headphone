@@ -1,3 +1,4 @@
+import { Products } from "../models/Product.model.js";
 import { ProductVariants } from "../models/Product_Variants.js";
 import pkg from 'cloudinary';
 const { v2: cloudinary } = pkg;
@@ -24,9 +25,11 @@ const createProductVariants = async (req, res) => {
 };
 const getProductVariantsByid = async (req, res) => {
   const { id } = req.params;
+  // console.log('id',id);
+  
   try {
-    const resultVariantByid = await ProductVariants.find({ Id_Products: id });
-    // console.log(resultVariantByid);
+    const resultVariantByid = await ProductVariants.find({ Id_Products: id }); 
+    // console.log('resultVariantByid',resultVariantByid);
     
     if (resultVariantByid) {
       return res.status(200).json({ resultVariantByid });
@@ -39,7 +42,7 @@ const getProductVariantsByid = async (req, res) => {
 
 const GetAllProductVariants = async (req,res) => {
   try {
-    const getAllProductVariants = await ProductVariants.find();
+    const getAllProductVariants = await ProductVariants.find().populate("Id_Products");
     if (getAllProductVariants) {
       return res.status(200).json({ getAllProductVariants });
     }
@@ -48,6 +51,16 @@ const GetAllProductVariants = async (req,res) => {
     return res.status(500).json({ error: error.message });
   }
 }
+const updateStockProduct = async (req, res) => {
+  const { id } = req.params;
+  const { Stock } = req.body;
+  try {
+    const result = await ProductVariants.findOneAndUpdate({ _id: id }, { $inc: { Stock: Stock } }, { new: true });
+    return res.status(200).json({ result });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
 const deleteProductVariants = async (req, res) => {
   const { id } = req.params;
@@ -71,8 +84,10 @@ const deleteProductVariants = async (req, res) => {
 };
 const updateProductVariants = async (req, res) => {
   const { id } = req.params;
-  const { Color, Size, Stock, Id_Products } = req.body;
+  const { Color, Size, Stock, Id_Products,Price } = req.body;
   const Image = req.file;
+  // console.log(Color, Size, Stock, Id_Products,Price);
+  
   try {
     const resultId = await ProductVariants.findOne({ _id: id });
     const public_idCloud = resultId.Image.filename;
@@ -83,8 +98,9 @@ const updateProductVariants = async (req, res) => {
           Color,
           Size,
           Image: Image,
+          Price,
           Stock,
-          Id_Products,
+          Id_Products : Id_Products,
         },
       }
     );
@@ -104,4 +120,4 @@ const updateProductVariants = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-export { createProductVariants, getProductVariantsByid, deleteProductVariants, updateProductVariants,GetAllProductVariants };
+export { createProductVariants, getProductVariantsByid, deleteProductVariants, updateProductVariants,GetAllProductVariants,updateStockProduct };
