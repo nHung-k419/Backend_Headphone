@@ -1,11 +1,14 @@
 import { Products } from "../models/Product.model.js";
 import axios from "axios";
+import { ProductVariants } from "../models/Product_Variants.js";
 
 const buildPrompt = (question, products) => {
+  // console.log(products);
+  
   const productDescriptions = products
     .map(
       (p) =>
-        `Tên: ${p.Name}, Mô tả: ${p.Description},Hình ảnh: ${p.ImageUrl.path}, Giá: ${p.Price.toLocaleString()} VND`
+        `Tên: ${p.Id_Products.Name}, Mô tả: ${p.Id_Products.Description},Hình ảnh: ${p.Id_Products.ImageUrl.path}, Giá: ${p.Price.toLocaleString()} VND`
     )
     .join("\n");
 
@@ -22,9 +25,8 @@ Dựa vào các câu hỏi hãy trả lời thật chính xác cho người dùn
 const handleChat = async (req, res) => {
   const { question } = req.body;
   if (!question) return res.status(400).json({ error: "Câu hỏi trống!" });
-
   try {
-    const products = await Products.find().limit(8);
+    const products = await ProductVariants.find().populate("Id_Products")
     const prompt = buildPrompt(question, products);
 
     const geminiRes = await axios.post(

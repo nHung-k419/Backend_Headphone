@@ -13,6 +13,7 @@ const OrderSchemma = new mongoose.Schema({
   CreateAt: { type: Date, default: Date.now() },
   StatusPayment : {type : String, default : "Chưa thanh toán"},
   Email : {type : String},
+  voucherCode : {type : String, default : null}
 });
 const Order = mongoose.model("Order", OrderSchemma);
 export { Order };

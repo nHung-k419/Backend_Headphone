@@ -7,14 +7,13 @@ import router from "./routes/index.js";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import { initSocket } from "./socket/socket.js";
-import { OrderItems } from "./models/OrderItems.model.js";
-import { ProductVariants } from "./models/Product_Variants.js";
+import { Users } from "./models/User.model.js";
+import "./jobs/sendVoucherJob.js"
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app); // 👈 Tạo HTTP server từ Express
 const io = initSocket(httpServer);
-
 // Setup Socket.IO
 // const io = new Server(httpServer, {
 //   cors: {
@@ -59,7 +58,8 @@ connectDB().then(() => {
     console.log(`🚀 Server is running on port ${PORT}`);
   });
 });
-// const reuslt = await ProductVariants.updateMany({ Sold: { $exists: false } }, { $set: { Sold: 0 } });
+
+// const reuslt = await Users.updateMany({ Image: { $exists: true } }, { $set: { Image: {} } });
 // console.log(reuslt);
 
 // import express from "express";

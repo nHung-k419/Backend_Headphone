@@ -42,17 +42,25 @@ const getProduct = async (req, res) => {
   }
 };
 
-const getProductPageNavigation = async (req, res) => {
+const getProductFavourite = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 8;
-    const skip = (page - 1) * limit;
-    const getAllProductPage = await Products.find().skip(skip).limit(limit);
-    if (getAllProductPage) {
-      return res
-        .status(200)
-        .json({ data: getAllProductPage, currentPage: page, totalPages: Math.ceil((await Products.countDocuments()) / limit) });
-    }
+    const products = await Products.find({Rating : { $gt: 4 }}).lean();
+    const getAllProductPage = await Promise.all(
+      products.map(async (product) => {
+        const variants = await ProductVariants.find({ Id_Products: product._id });
+        const prices = variants.map((v) => v.Price);
+        const minPrice = prices.length ? Math.min(...prices) : null;
+        const maxPrice = prices.length ? Math.max(...prices) : null;
+
+        return {
+          ...product,
+          minPrice,
+          maxPrice,
+        };
+      })
+    );
+   
+    return res.status(200).json({ data: getAllProductPage });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
@@ -144,8 +152,10 @@ const getProductFilter = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
     const skip = (page - 1) * limit;
+
     let filter = {};
     let sort = {};
+
     if (type === "Mới nhất") sort = { createdAt: -1 };
     if (type === "Phổ biến") filter.Sold = { $gt: 0 };
     if (type === "Tất cả") filter = {};
@@ -159,12 +169,27 @@ const getProductFilter = async (req, res) => {
       filter.Name = { $regex: keyWord, $options: "i" };
     }
 
-    // console.log(filter);
-    const products = await Products.find(filter).sort(sort).skip(skip).limit(limit);
+    const products = await Products.find(filter).sort(sort).skip(skip).limit(limit).lean(); // use lean to map more spead
     const total = await Products.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
 
-    return res.json({ products, total, totalPages, currentPage: page });
+    // get min and max price for each product
+    const productsWithPrice = await Promise.all(
+      products.map(async (product) => {
+        const variants = await ProductVariants.find({ Id_Products: product._id });
+        const prices = variants.map((v) => v.Price);
+        const minPrice = prices.length ? Math.min(...prices) : null;
+        const maxPrice = prices.length ? Math.max(...prices) : null;
+
+        return {
+          ...product,
+          minPrice,
+          maxPrice,
+        };
+      })
+    );
+
+    return res.json({ products: productsWithPrice, total, totalPages, currentPage: page });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
@@ -195,10 +220,10 @@ const productBestSeller = async (req, res) => {
     const AllProductSellerReviews = await Promise.all(
       result.map(async (item) => {
         const reviews = await Reviews.find({ Id_Product: item.Id_Products._id });
-        return{
+        return {
           item,
-          reviews
-        }
+          reviews,
+        };
       })
     );
     return res.status(200).json({ AllProductSellerReviews });
@@ -237,7 +262,7 @@ export {
   deleteProduct,
   updateProduct,
   GetDetailProduct,
-  getProductPageNavigation,
+  getProductFavourite,
   getProductFilter,
   SearchProducts,
   productBestSeller,

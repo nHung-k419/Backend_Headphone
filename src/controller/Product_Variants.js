@@ -4,13 +4,14 @@ import pkg from 'cloudinary';
 const { v2: cloudinary } = pkg;
 const createProductVariants = async (req, res) => {
   try {
-    const { Color, Size, Stock, Id_Products } = req.body;
+    const { Color, Size, Stock,Price, Id_Products } = req.body;
     const Image = req.file;
     if (Color && Size && Stock && Image && Id_Products) {
       const newProductVariants = new ProductVariants({
         Color,
         Size,
         Image: Image,
+        Price,
         Stock,
         Id_Products,
       });
@@ -42,7 +43,7 @@ const getProductVariantsByid = async (req, res) => {
 
 const GetAllProductVariants = async (req,res) => {
   try {
-    const getAllProductVariants = await ProductVariants.find().populate("Id_Products");
+    const getAllProductVariants = await ProductVariants.find().populate("Id_Products")
     if (getAllProductVariants) {
       return res.status(200).json({ getAllProductVariants });
     }

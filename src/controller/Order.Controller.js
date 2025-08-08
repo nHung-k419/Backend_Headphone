@@ -37,9 +37,9 @@ const getOrder = async (req, res) => {
 };
 
 const CreateOrder = async (req, res) => {
-  let TotalAmount = 0;
-  const { Id_Cart, idUser, Phone, Fullname, Address, PaymentMethod, Email } = req.body;
-  // console.log("Email", Email);
+  // let TotalAmount = 0;
+  const { Id_Cart, idUser, Phone, Fullname, Address,TotalAmount, PaymentMethod,voucherCode, Email } = req.body;
+  // console.log("total", TotalAmount);
 
   try {
     const CartItemsOrder = await CartItems.find({ Id_Cart: Id_Cart }).populate({
@@ -51,15 +51,15 @@ const CreateOrder = async (req, res) => {
       },
     });
     const resultFind = await Cart.findOne({ Id_User: idUser });
-    if (resultFind) {
-      // const resultOrder = await CartItems.find({ Id_Cart: resultFind._id }).populate("Id_Product");
-      TotalAmount = CartItemsOrder.reduce((sum, item) => {
-        sum += item.Quantity * item?.Id_ProductVariants?.Price;
-        return sum;
-      }, 0);
-    }
+    // if (resultFind) {
+    //   // const resultOrder = await CartItems.find({ Id_Cart: resultFind._id }).populate("Id_Product");
+    //   TotalAmount = CartItemsOrder.reduce((sum, item) => {
+    //     sum += item.Quantity * item?.Id_ProductVariants?.Price;
+    //     return sum;
+    //   }, 0);
+    // }
 
-    const resultCreate = new Order({ Id_Cart, Id_User: idUser, Fullname, Phone, TotalAmount, PaymentMethod, Address, Email });
+    const resultCreate = new Order({ Id_Cart, Id_User: idUser, Fullname, Phone, TotalAmount,voucherCode, PaymentMethod, Address, Email });
     await resultCreate.save();
     const OrderItemsDate = CartItemsOrder.map((item) => ({
       Id_Order: resultCreate._id,
@@ -82,7 +82,7 @@ const CreateOrder = async (req, res) => {
 
     if (PaymentMethod === "COD") {
       await CartItems.deleteMany({ Id_Cart: Id_Cart });
-      await mailAcceptOrder(Email, Fullname, resultCreate._id, resultCreate.CreateAt, OrderItemsDate, resultCreate.TotalAmount);
+      await mailAcceptOrder(Email, Fullname, resultCreate._id, resultCreate.CreateAt, OrderItemsDate, TotalAmount);
     }
 
     return res.status(200).json({ resultCreate });
