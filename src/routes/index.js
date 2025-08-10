@@ -43,6 +43,7 @@ import {
   GetAllOrder,
   GetAllOrderItems,
   updateStatusOrder,
+  
 } from "../controller/Order.Controller.js";
 import { sendImageComment, getReviewsById } from "../controller/Reviews.Controller.js";
 import { CreateCommentLike, getLikeComment } from "../controller/CommentLike.controller.js";
@@ -53,6 +54,7 @@ import { getNotificationById, markAsRead } from "../controller/Notifacation.Cont
 import VerifyAuth from "../middleWare/Verify.js";
 import uploadCloud from "../config/CloudinaryConfig.js";
 import Decentralization from "../middleWare/Decentralization.js";
+import { getDistricts, getProvinces, getWards } from "../controller/Location.Controller.js";
 const router = express.Router();
 // Product Route
 router.post("/CreateProduct", VerifyAuth, Decentralization(["admin"]), uploadCloud.single("ImageUrl"), createProduct);
@@ -138,4 +140,8 @@ router.post("/checkVoucher", VerifyAuth, Decentralization(["user", "admin"]), ch
 // Notification Route
 router.get("/getNotificationById/:id", getNotificationById);
 router.post("/markAsRead/:id", VerifyAuth, Decentralization(["user", "admin"]), markAsRead);
+
+router.get("/getProvinces", getProvinces);
+router.get("/getDistricts/:code", getDistricts);
+router.get("/getWards/:code", getWards);
 export default router;

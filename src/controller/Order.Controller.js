@@ -238,7 +238,7 @@ const getOrderItems = async (req, res) => {
 const getAddressOrder = async (req, res) => {
   const { Id_User } = req.params;
   try {
-    const findAdressOrder = await Order.findOne({ Id_User: Id_User }).sort({ createdAt: -1 });
+    const findAdressOrder = await Order.findOne({ Id_User: Id_User }).sort({ CreateAt: -1 });
     return res.status(200).json({ findAdressOrder });
   } catch (error) {
     return res.status(500).json({ error: error.message });

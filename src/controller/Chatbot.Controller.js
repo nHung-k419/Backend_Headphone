@@ -8,7 +8,7 @@ const buildPrompt = (question, products) => {
   const productDescriptions = products
     .map(
       (p) =>
-        `Tên: ${p.Id_Products.Name}, Mô tả: ${p.Id_Products.Description},Hình ảnh: ${p.Id_Products.ImageUrl.path}, Giá: ${p.Price.toLocaleString()} VND`
+        `Tên: ${p.Id_Products.Name}, Mô tả: ${p.Id_Products.Description},Hình ảnh: ${p.Id_Products.ImageUrl.path}, Giá: ${p.Price.toLocaleString()} VND, Đánh giá :${p.Id_Products.Rating}`
     )
     .join("\n");
 
