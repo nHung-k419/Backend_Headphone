@@ -33,8 +33,8 @@ const checkVoucher = async (req, res) => {
   const { code, orderTotal, idUser } = req.body;
 
   try {
-    const isUsedVoucher = await Order.findOne({ Id_User: idUser, voucherCode: code });
-    // console.log(isUsedVoucher);
+    const isUsedVoucher = await Order.findOne({ Id_User: idUser, voucherCode: code});
+    console.log(isUsedVoucher);
     
     const voucher = await Voucher.findOne({ code });
 

@@ -10,7 +10,7 @@ const UserSchemma = new mongoose.Schema({
   Sex: { type: String, default: null },
   Image: { type: Object, default: null },
   Role: { type: String, default: "user" },
-  VoucherSent : {type : Boolean, default : false},
+  VoucherSent : {type : Array, default : []},
   CreateAt: { type: Date, default: Date.now() },
 });
 
