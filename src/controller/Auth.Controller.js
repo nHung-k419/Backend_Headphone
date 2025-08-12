@@ -71,14 +71,14 @@ const Login = async (req, res) => {
 const Logout = (req, res) => {
   res.clearCookie("accessToken", {
     httpOnly: true,
-    sameSite: "Strict",
-    secure: false, // true nếu dùng HTTPS
+    sameSite: "none",
+    secure: true, // true nếu dùng HTTPS
   });
 
   res.clearCookie("refreshToken", {
     httpOnly: true,
-    sameSite: "Strict",
-    secure: false,
+    sameSite: "none",
+    secure: true,
     // path: "/api/auth/refresh", // nếu bạn set path khi tạo cookie
   });
 
@@ -97,8 +97,8 @@ const RefreshToken = async (req, res) => {
       // console.log('accessToken',accessToken);
       res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        sameSite: "Strict",
-        secure: false, // Bắt buộc dùng ở production (HTTPS)
+        sameSite: "none",
+        secure: true, // Bắt buộc dùng ở production (HTTPS)
         maxAge: 15 * 60 * 1000, // 15 phút
       });
 
