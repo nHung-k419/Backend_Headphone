@@ -75,7 +75,7 @@ connectDB().then(() => {
 
 // app.use(
 //   cors({
-//     origin: process.env.CLIENT_URL,
+//     origin: "https://soundorastore.vercel.app",
 //     credentials: true,
 //   })
 // );
