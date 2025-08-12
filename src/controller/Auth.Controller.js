@@ -45,7 +45,7 @@ const Login = async (req, res) => {
     const refreshToken = createRefreshToken({ id: isCheckUser._id, Email: isCheckUser.Email });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: true,
       //   path: '/api/auth/refresh_token',
       sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -53,7 +53,7 @@ const Login = async (req, res) => {
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       sameSite: "none",
-      secure: false, // Bắt buộc dùng ở production (HTTPS)
+      secure: true, // Bắt buộc dùng ở production (HTTPS)
       maxAge: 15 * 60 * 1000, // 15 phút
     });
     res.cookie("User", JSON.stringify({ id: isCheckUser._id, Email: isCheckUser.Email, Name: isCheckUser.Name, Role: isCheckUser.Role }), {
