@@ -62,7 +62,7 @@ const Login = async (req, res) => {
       sameSite: "none",
       // maxAge: 60 * 60 * 1000, // 1h
     });
-    return res.status(200).json({ message: "Login successfully", Email: isCheckUser.Email, Name: isCheckUser.Name, id: isCheckUser._id });
+    return res.status(200).json({ message: "Login successfully", Email: isCheckUser.Email, Name: isCheckUser.Name, id: isCheckUser._id,Role: isCheckUser.Role });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
