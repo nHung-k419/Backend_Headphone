@@ -12,7 +12,7 @@ export const initSocket = (server) => {
 
   io.on("connection", (socket) => {
     socket.on("sendReview", async (data, callback) => {
-      // console.log(data);
+      console.log('data',data);
       
       const resultReview = await saveReview(data);
       // console.log("resultReview",resultReview);

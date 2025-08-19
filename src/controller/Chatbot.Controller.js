@@ -3,7 +3,9 @@ import axios from "axios";
 import { ProductVariants } from "../models/Product_Variants.js";
 
 const buildPrompt = (question, products) => {
-  // console.log(products);
+//  const ac = products.map((p) => p.Id_Products.Name)qư
+ console.log(products);
+ 
   
   const productDescriptions = products
     .map(
