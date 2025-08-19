@@ -41,7 +41,7 @@ const io = initSocket(httpServer);
 // Middlewares
 app.use(
   cors({
-    origin: "https://backend-headphone.onrender.com",
+    origin: "https://soundora-store.onrender.com",
     credentials: true,
   })
 );
