@@ -45,24 +45,27 @@ const Login = async (req, res) => {
     const refreshToken = createRefreshToken({ id: isCheckUser._id, Email: isCheckUser.Email });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: true,
       //   path: '/api/auth/refresh_token',
-      sameSite: "strict",
+      sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/",
     });
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      sameSite: "Strict",
-      secure: false, // Bắt buộc dùng ở production (HTTPS)
+      sameSite: "none",
+      secure: true, // Bắt buộc dùng ở production (HTTPS)
       maxAge: 15 * 60 * 1000, // 15 phút
+      path: "/",
     });
     res.cookie("User", JSON.stringify({ id: isCheckUser._id, Email: isCheckUser.Email, Name: isCheckUser.Name, Role: isCheckUser.Role }), {
       // httpOnly: true, // JS client không đọc được
       secure: true, // chỉ gửi qua HTTPS
-      sameSite: "Strict",
+      sameSite: "none",
+      path: "/",
       // maxAge: 60 * 60 * 1000, // 1h
     });
-    return res.status(200).json({ message: "Login successfully", Email: isCheckUser.Email, Name: isCheckUser.Name, id: isCheckUser._id, Role: isCheckUser.Role });
+    return res.status(200).json({ message: "Login successfully", Email: isCheckUser.Email, Name: isCheckUser.Name, id: isCheckUser._id,Role: isCheckUser.Role });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
@@ -71,14 +74,16 @@ const Login = async (req, res) => {
 const Logout = (req, res) => {
   res.clearCookie("accessToken", {
     httpOnly: true,
-    sameSite: "Strict",
-    secure: false, // true nếu dùng HTTPS
+    sameSite: "none",
+    secure: true, // true nếu dùng HTTPS
+    path: "/",
   });
 
   res.clearCookie("refreshToken", {
     httpOnly: true,
-    sameSite: "Strict",
-    secure: false,
+    sameSite: "none",
+    secure: true,
+    path: "/",
     // path: "/api/auth/refresh", // nếu bạn set path khi tạo cookie
   });
 
@@ -97,9 +102,10 @@ const RefreshToken = async (req, res) => {
       // console.log('accessToken',accessToken);
       res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        sameSite: "Strict",
-        secure: false, // Bắt buộc dùng ở production (HTTPS)
+        sameSite: "none",
+        secure: true, // Bắt buộc dùng ở production (HTTPS)
         maxAge: 15 * 60 * 1000, // 15 phút
+        path: "/",
       });
 
       res.json({ accessToken });

@@ -17,7 +17,7 @@ const io = initSocket(httpServer);
 // Setup Socket.IO
 // const io = new Server(httpServer, {
 //   cors: {
-//     origin: process.env.CLIENT_URL,
+//     origin: "https://soundora-store.onrender.com",
 //     credentials: true,
 //   },
 // });
@@ -41,7 +41,7 @@ const io = initSocket(httpServer);
 // Middlewares
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: "https://soundora-store.onrender.com",
     credentials: true,
   })
 );
@@ -75,7 +75,7 @@ connectDB().then(() => {
 
 // app.use(
 //   cors({
-//     origin: process.env.CLIENT_URL,
+//     origin: "https://soundorastore.vercel.app",
 //     credentials: true,
 //   })
 // );
