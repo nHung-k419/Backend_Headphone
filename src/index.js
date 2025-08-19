@@ -17,7 +17,7 @@ const io = initSocket(httpServer);
 // Setup Socket.IO
 // const io = new Server(httpServer, {
 //   cors: {
-//     origin: "https://soundorastore.vercel.app",
+//     origin: "https://soundora-store.onrender.com",
 //     credentials: true,
 //   },
 // });
