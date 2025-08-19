@@ -50,7 +50,6 @@ const Login = async (req, res) => {
       sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: "/",
-      domain: "backend-headphone.onrender.com" 
     });
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
@@ -58,14 +57,12 @@ const Login = async (req, res) => {
       secure: true, // Bắt buộc dùng ở production (HTTPS)
       maxAge: 15 * 60 * 1000, // 15 phút
       path: "/",
-      domain: "backend-headphone.onrender.com" 
     });
     res.cookie("User", JSON.stringify({ id: isCheckUser._id, Email: isCheckUser.Email, Name: isCheckUser.Name, Role: isCheckUser.Role }), {
       // httpOnly: true, // JS client không đọc được
       secure: true, // chỉ gửi qua HTTPS
       sameSite: "none",
       path: "/",
-      domain: "backend-headphone.onrender.com" 
       // maxAge: 60 * 60 * 1000, // 1h
     });
     return res.status(200).json({ message: "Login successfully", Email: isCheckUser.Email, Name: isCheckUser.Name, id: isCheckUser._id,Role: isCheckUser.Role });
@@ -80,7 +77,6 @@ const Logout = (req, res) => {
     sameSite: "none",
     secure: true, // true nếu dùng HTTPS
     path: "/",
-    domain: "backend-headphone.onrender.com" 
   });
 
   res.clearCookie("refreshToken", {
@@ -88,7 +84,6 @@ const Logout = (req, res) => {
     sameSite: "none",
     secure: true,
     path: "/",
-    domain: "backend-headphone.onrender.com" 
     // path: "/api/auth/refresh", // nếu bạn set path khi tạo cookie
   });
 
@@ -111,7 +106,6 @@ const RefreshToken = async (req, res) => {
         secure: true, // Bắt buộc dùng ở production (HTTPS)
         maxAge: 15 * 60 * 1000, // 15 phút
         path: "/",
-        domain: "backend-headphone.onrender.com" 
       });
 
       res.json({ accessToken });
