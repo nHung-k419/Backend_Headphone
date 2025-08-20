@@ -114,7 +114,7 @@ router.post("/DeleteCartItem", VerifyAuth, Decentralization(["user", "admin"]), 
 router.get("/GetOrder/:idUser", VerifyAuth, Decentralization(["user", "admin"]), getOrder);
 router.get("/GetAllOrder", VerifyAuth, Decentralization(["admin", "user"]), GetAllOrder);
 router.post("/CreateOrder", VerifyAuth, Decentralization(["user", "admin"]), CreateOrder);
-router.post("/GetOrderItems/:Id_User", getOrderItems);
+router.post("/GetOrderItems/:Id_User",VerifyAuth, getOrderItems);
 router.get("/GetAllOrderItems", VerifyAuth, Decentralization(["admin", "user"]), GetAllOrderItems);
 router.put("/UpdateStatusOrder/:id", VerifyAuth, Decentralization(["admin", "user"]), updateStatusOrder);
 router.post("/OrderPaymentZalo", VerifyAuth, Decentralization(["user", "admin"]), paymentWithZalopay);
