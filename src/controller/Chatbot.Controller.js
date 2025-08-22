@@ -4,7 +4,7 @@ import { ProductVariants } from "../models/Product_Variants.js";
 
 const buildPrompt = (question, products) => {
 //  const ac = products.map((p) => p.Id_Products.Name)qư
- console.log(products);
+//  console.log(products);
  
   
   const productDescriptions = products
