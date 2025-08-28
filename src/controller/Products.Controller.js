@@ -286,14 +286,22 @@ const newProduct = async (req, res) => {
 const handleAddFavourite = async (req, res) => {
   try {
     const { idUser, idProduct } = req.body;
-    const isCheckExist = await Favourite.findOne({ Id_User: idUser, Id_Product: idProduct });
-    if (isCheckExist) {
-      const result = await Favourite.deleteOne({ Id_User: idUser, Id_Product: idProduct });
-      return res.status(200).json({ message: "Product deleted from favourite successfully" });
+    const deleted = await Favourite.findOneAndDelete({
+      Id_User: idUser,
+      Id_Product: idProduct,
+    });
+    // console.log("Mongo executionTimeMillis:", deleted.executionStats.executionTimeMillis);
+    if (deleted) {
+      return res.status(200).json({
+        message: "Product deleted from favourite successfully",
+      });
     }
     const newFavourite = new Favourite({ Id_User: idUser, Id_Product: idProduct });
     await newFavourite.save();
-    return res.status(200).json({ message: "Product added to favourite successfully" });
+
+    return res.status(200).json({
+      message: "Product added to favourite successfully",
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
@@ -336,7 +344,7 @@ export {
   productBestSeller,
   newProduct,
   handleAddFavourite,
-  getFavouriteByUser
+  getFavouriteByUser,
   // selectTypeProduct,
 };
 
