@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import { initSocket } from "./socket/socket.js";
 import { Users } from "./models/User.model.js";
+import { ProductVariants } from "./models/Product_Variants.js";
 import "./jobs/sendVoucherJob.js"
 dotenv.config();
 
@@ -41,7 +42,7 @@ const io = initSocket(httpServer);
 // Middlewares
 app.use(
   cors({
-    origin: "https://soundora-store.onrender.com",
+    origin: process.env.CLIENT_URL,
     credentials: true,
   })
 );
@@ -61,6 +62,11 @@ connectDB().then(() => {
 
 // const reuslt = await Users.updateMany({ Image: { $exists: true } }, { $set: { Image: {} } });
 // console.log(reuslt);
+// const bac = await ProductVariants.updateMany(
+//   {},
+//   [{ $set: { Id_Products: { $toObjectId: "$Id_Products" } } }]
+// )
+// console.log(bac);
 
 // import express from "express";
 // import mongoose from "mongoose";

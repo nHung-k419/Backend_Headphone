@@ -7,7 +7,7 @@ const ProductVariantsModel = new mongoose.Schema({
   Price: { type: Number, required: true },
   Stock: { type: Number },
   Sold : {type : Number, default : 0},
-  Id_Products: { type: String, ref: "Product", required: true },
+  Id_Products: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
   CreateAt: { type: Date, default: Date.now() },
 });
 

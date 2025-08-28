@@ -1,3 +1,4 @@
+import { Favourite } from "../models/Favourite.model.js";
 import { Products } from "../models/Product.model.js";
 import { ProductVariants } from "../models/Product_Variants.js";
 import { Reviews } from "../models/Reviews.model.js";
@@ -44,7 +45,7 @@ const getProduct = async (req, res) => {
 
 const getProductFavourite = async (req, res) => {
   try {
-    const products = await Products.find({Rating : { $gt: 4 }}).lean();
+    const products = await Products.find({ Rating: { $gt: 4 } }).lean();
     const getAllProductPage = await Promise.all(
       products.map(async (product) => {
         const variants = await ProductVariants.find({ Id_Products: product._id });
@@ -59,7 +60,7 @@ const getProductFavourite = async (req, res) => {
         };
       })
     );
-   
+
     return res.status(200).json({ data: getAllProductPage });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -148,15 +149,16 @@ const getProductFilter = async (req, res) => {
     const valuePrice = parseFloat(req.query.valuePrice);
     const keyWord = req.query.keyWord;
     const type = req.query.type;
+    console.log(type);
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
     const skip = (page - 1) * limit;
 
     let filter = {};
-    let sort = {};
+    let sort = { CreateAt: 1 };
 
-    if (type === "Mới nhất") sort = { createdAt: -1 };
+    if (type === "Mới nhất") sort = { CreateAt: -1 };
     if (type === "Phổ biến") filter.Sold = { $gt: 0 };
     if (type === "Tất cả") filter = {};
 
@@ -174,20 +176,60 @@ const getProductFilter = async (req, res) => {
     const totalPages = Math.ceil(total / limit);
 
     // get min and max price for each product
-    const productsWithPrice = await Promise.all(
-      products.map(async (product) => {
-        const variants = await ProductVariants.find({ Id_Products: product._id });
-        const prices = variants.map((v) => v.Price);
-        const minPrice = prices.length ? Math.min(...prices) : null;
-        const maxPrice = prices.length ? Math.max(...prices) : null;
-
-        return {
-          ...product,
-          minPrice,
-          maxPrice,
-        };
-      })
-    );
+    const productsWithPrice = await Products.aggregate([
+      { $match: filter },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "productvariants",
+          localField: "_id",
+          foreignField: "Id_Products",
+          as: "variants",
+        },
+      },
+      {
+        $addFields: {
+          minPrice: { $min: "$variants.Price" },
+          maxPrice: { $max: "$variants.Price" },
+        },
+      },
+      {
+        $addFields: {
+          maxVariant: {
+            $arrayElemAt: [
+              {
+                $filter: {
+                  input: "$variants",
+                  cond: { $eq: ["$$this.Price", "$minPrice"] }, // 👈 dùng maxPrice đã tính ở trên
+                },
+              },
+              0,
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          Name: 1,
+          Brand: 1,
+          Id_Category: 1,
+          Rating: 1,
+          Sold: 1,
+          minPrice: 1,
+          maxPrice: 1,
+          Description: 1,
+          Color: 1,
+          "maxVariant.Image": 1,
+          "maxVariant.Stock": 1,
+          "maxVariant.Price": 1,
+          "maxVariant._id": 1,
+          "maxVariant.Color": 1,
+          "maxVariant.Size": 1,
+        },
+      },
+    ]);
 
     return res.json({ products: productsWithPrice, total, totalPages, currentPage: page });
   } catch (error) {
@@ -241,6 +283,32 @@ const newProduct = async (req, res) => {
   }
 };
 
+const handleAddFavourite = async (req, res) => {
+  try {
+    const { idUser, idProduct } = req.body;
+    const isCheckExist = await Favourite.findOne({ Id_User: idUser, Id_Product: idProduct });
+    if (isCheckExist) {
+      const result = await Favourite.deleteOne({ Id_User: idUser, Id_Product: idProduct });
+      return res.status(200).json({ message: "Product deleted from favourite successfully" });
+    }
+    const newFavourite = new Favourite({ Id_User: idUser, Id_Product: idProduct });
+    await newFavourite.save();
+    return res.status(200).json({ message: "Product added to favourite successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+const getFavouriteByUser = async (req, res) => {
+  try {
+    const { idUser } = req.params;
+    const result = await Favourite.find({ Id_User: idUser }).populate("Id_Product");
+    return res.status(200).json({ result });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 // const selectTypeProduct = async (req, res) => {
 //   try {
 //     const { type } = req.params;
@@ -267,5 +335,59 @@ export {
   SearchProducts,
   productBestSeller,
   newProduct,
+  handleAddFavourite,
+  getFavouriteByUser
   // selectTypeProduct,
 };
+
+//  try {
+//     const idCategory = req.query.idCategory;
+//     const idBrand = req.query.idBrand;
+//     const valuePrice = parseFloat(req.query.valuePrice);
+//     const keyWord = req.query.keyWord;
+//     const type = req.query.type;
+
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 8;
+//     const skip = (page - 1) * limit;
+
+//     let filter = {};
+//     let sort = {};
+
+//     if (type === "Mới nhất") sort = { createdAt: -1 };
+//     if (type === "Phổ biến") filter.Sold = { $gt: 0 };
+//     if (type === "Tất cả") filter = {};
+
+//     if (idBrand) filter.Brand = idBrand;
+//     if (idCategory) filter.Id_Category = idCategory;
+//     if (!isNaN(valuePrice)) {
+//       filter.Price = { $gte: valuePrice };
+//     }
+//     if (keyWord) {
+//       filter.Name = { $regex: keyWord, $options: "i" };
+//     }
+
+//     const products = await Products.find(filter).sort(sort).skip(skip).limit(limit).lean(); // use lean to map more spead
+//     const total = await Products.countDocuments(filter);
+//     const totalPages = Math.ceil(total / limit);
+
+//     // get min and max price for each product
+//     const productsWithPrice = await Promise.all(
+//       products.map(async (product) => {
+//         const variants = await ProductVariants.find({ Id_Products: product._id });
+//         const prices = variants.map((v) => v.Price);
+//         const minPrice = prices.length ? Math.min(...prices) : null;
+//         const maxPrice = prices.length ? Math.max(...prices) : null;
+
+//         return {
+//           ...product,
+//           minPrice,
+//           maxPrice,
+//         };
+//       })
+//     );
+
+//     return res.json({ products: productsWithPrice, total, totalPages, currentPage: page });
+//   } catch (error) {
+//     return res.status(500).json({ error: error.message });
+//   }

@@ -10,6 +10,8 @@ import {
   productBestSeller,
   newProduct,
   getProduct,
+  handleAddFavourite,
+  getFavouriteByUser
   // selectTypeProduct
 } from "../controller/Products.Controller.js";
 import { GetAllCategory, AddCategory, UpdateCategory, DeleteCategory } from "../controller/Category.Controller.js";
@@ -66,6 +68,8 @@ router.get("/SearchProducts", SearchProducts);
 router.get("/productBestSeller", productBestSeller);
 router.get("/newProduct", newProduct);
 router.get("/GetAllProduct", getProduct);
+router.post("/handleAddFavourite", handleAddFavourite);
+router.get("/getFavouriteByUser/:idUser", getFavouriteByUser);
 // router.get("/selectTypeProduct/:type", selectTypeProduct);
 
 // Category Route
