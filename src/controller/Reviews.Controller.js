@@ -2,7 +2,6 @@ import { getSocket } from "../socket/socket.js";
 import { Reviews } from "../models/Reviews.model.js";
 import { Products } from "../models/Product.model.js";
 import mongoose from "mongoose";
-const ObjectId = mongoose.Types.ObjectId;
 const sendImageComment = (req, res) => {
   const Images = req.files;
   // console.log("Files:", req.files);
@@ -50,4 +49,13 @@ const getReviewsById = async (req, res) => {
   }
 };
 
-export { sendImageComment, saveReview, getReviewsById };
+const getAllReviews = async (req, res) => {
+  try {
+    const result = await Reviews.find().populate("Id_User").populate("Id_Product").sort({ createdAt: -1 });
+    return res.status(200).json({ result });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export { sendImageComment, saveReview, getReviewsById,getAllReviews };

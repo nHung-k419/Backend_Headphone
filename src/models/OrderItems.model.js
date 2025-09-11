@@ -10,5 +10,7 @@ const OrderItemsSchema = new mongoose.Schema({
   Quantity: { type: Number },
   CreateAt: { type: Date, default: Date.now() },
 });
+OrderItemsSchema.index({ Id_Order: 1, Id_ProductVariants: 1 }, { unique: true });
+
 const OrderItems = mongoose.model("OrderItems", OrderItemsSchema);
 export { OrderItems };

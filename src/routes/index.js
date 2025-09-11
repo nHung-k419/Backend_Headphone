@@ -33,6 +33,8 @@ import {
   Logout,
   getProfileUser,
   updateProfile,
+  getAllAccount,
+  updateRoleAccount
 } from "../controller/Auth.Controller.js";
 import { AddCart, GetCartByUser, handlePrevious, handleNext, handleDlCartItem } from "../controller/Cart.Controller.js";
 import {
@@ -47,7 +49,7 @@ import {
   updateStatusOrder,
   
 } from "../controller/Order.Controller.js";
-import { sendImageComment, getReviewsById } from "../controller/Reviews.Controller.js";
+import { sendImageComment, getReviewsById, getAllReviews } from "../controller/Reviews.Controller.js";
 import { CreateCommentLike, getLikeComment } from "../controller/CommentLike.controller.js";
 import { handleChat } from "../controller/Chatbot.Controller.js";
 import { requestCancle, getAllCancleRequests, updateStatusCancleRequest } from "../controller/cancel_requests .Controller.js";
@@ -103,6 +105,8 @@ router.get("/createRefreshToken", createRefreshToken);
 router.post("/Logout", Logout);
 router.get("/getProfileUser/:id", getProfileUser);
 router.put("/updateProfile/:id", uploadCloud.single("Image"), updateProfile);
+router.get("/getAllAccount", getAllAccount);
+router.put("/updateRoleAccount/:id", updateRoleAccount);
 
 // detail product route
 router.get("/GetDetailProduct/:id", GetDetailProduct);
@@ -125,9 +129,10 @@ router.post("/OrderPaymentZalo", paymentWithZalopay);
 router.post("/CallbackOrder", Callback);
 router.get("/GetAddressOrder/:Id_User", getAddressOrder);
 
+// Reviews
 router.post("/sendImageComment", uploadCloud.array("Images"), sendImageComment);
 router.get("/getReviewsById/:idProduct", getReviewsById);
-
+router.get("/getAllReviews", getAllReviews);
 router.post("/CreateCommentLike", CreateCommentLike);
 router.get("/getLikeComment/:UserId", getLikeComment);
 

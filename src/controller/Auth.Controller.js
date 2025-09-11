@@ -162,4 +162,27 @@ const updateProfile = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-export { Register, Login, createAccessToken, createRefreshToken, RefreshToken, Logout, getProfileUser, updateProfile };
+const getAllAccount = async (req, res) => {
+  try {
+    const result = await Users.find({});
+    return res.status(200).json({ result });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}
+const updateRoleAccount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { Role } = req.body;
+    
+    const result = await Users.findOneAndUpdate({ _id: id }, { $set: { Role } });
+    
+    if (!result) {
+      return res.status(400).json({ message: "User not updated" });
+    }
+    return res.status(200).json({ message: "User updated successfully", result });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}
+export { Register, Login, createAccessToken, createRefreshToken, RefreshToken, Logout, getProfileUser, updateProfile,getAllAccount,updateRoleAccount };

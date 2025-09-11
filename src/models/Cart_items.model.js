@@ -9,6 +9,7 @@ const CartItems_Model = new mongoose.Schema({
     Quantity : {type : Number, default : 1},
     CreateAt: { type: Date, default: Date.now() },
 })
+CartItems_Model.index({ Id_Cart: 1, Id_ProductVariants: 1 }, { unique: true });
 const CartItems = mongoose.model("CartItems", CartItems_Model);
 
 export { CartItems }; 

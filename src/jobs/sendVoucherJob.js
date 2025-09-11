@@ -49,7 +49,7 @@ nodeCron.schedule("* * * * *", async () => {
   // VOUCHER SỰ KIỆN 2/9/2025
   const eventStart = new Date("2025-08-09T00:00:00");
   const eventEnd = new Date("2025-09-02T23:59:59");
-  if (now >= eventStart && now <= eventEnd) {
+  if (now >= eventStart && now <= eventEnd) { 
     const eventVoucher = await Voucher.findOne({ code: "QUOCKHANH29" });
 
     if (eventVoucher) {

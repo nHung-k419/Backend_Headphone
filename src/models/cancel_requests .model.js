@@ -10,6 +10,6 @@ const cancelRequestsModel = new mongoose.Schema({
   reviewedAt: {type : Date, default : Date.now()},
 });
 
-
+cancelRequestsModel.index({ orderId: 1, userId: 1 }, { unique: true });
 const cancleRequests = mongoose.model("cancelRequests", cancelRequestsModel);
 export { cancleRequests }; 

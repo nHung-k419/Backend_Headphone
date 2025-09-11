@@ -15,5 +15,7 @@ const OrderSchemma = new mongoose.Schema({
   Email : {type : String},
   voucherCode : {type : String, default : null}
 });
+OrderSchemma.index({ Id_User: 1, Id_Cart: 1 }, { unique: true });
+
 const Order = mongoose.model("Order", OrderSchemma);
 export { Order };

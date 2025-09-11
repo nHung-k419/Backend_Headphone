@@ -202,7 +202,7 @@ const getProductFilter = async (req, res) => {
               {
                 $filter: {
                   input: "$variants",
-                  cond: { $eq: ["$$this.Price", "$minPrice"] }, // 👈 dùng maxPrice đã tính ở trên
+                  cond: { $eq: ["$$this.Price", "$minPrice"] },
                 },
               },
               0,

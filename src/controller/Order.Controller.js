@@ -38,7 +38,7 @@ const getOrder = async (req, res) => {
 
 const CreateOrder = async (req, res) => {
   // let TotalAmount = 0;
-  const { Id_Cart, idUser, Phone, Fullname, Address,TotalAmount, PaymentMethod,voucherCode, Email } = req.body;
+  const { Id_Cart, idUser, Phone, Fullname, Address, TotalAmount, PaymentMethod, voucherCode, Email } = req.body;
   // console.log("total", TotalAmount);
 
   try {
@@ -59,7 +59,7 @@ const CreateOrder = async (req, res) => {
     //   }, 0);
     // }
 
-    const resultCreate = new Order({ Id_Cart, Id_User: idUser, Fullname, Phone, TotalAmount,voucherCode, PaymentMethod, Address, Email });
+    const resultCreate = new Order({ Id_Cart, Id_User: idUser, Fullname, Phone, TotalAmount, voucherCode, PaymentMethod, Address, Email });
     await resultCreate.save();
     const OrderItemsDate = CartItemsOrder.map((item) => ({
       Id_Order: resultCreate._id,
@@ -257,10 +257,27 @@ const getStatusOrder = async (req, res) => {
 
 const GetAllOrder = async (req, res) => {
   try {
-    const getAllOrder = await Order.find({}).sort({ CreateAt: -1 });
+    const getAllOrder = await Order.find({}).sort({ createdAt: -1 });
+    const detailOrderItems = await Promise.all(
+      getAllOrder.map(async (order) => {
+        const items = await OrderItems.find({ Id_Order: order._id }).populate({
+          path: "Id_ProductVariants",
+          model: "ProductVariants",
+          populate: {
+            path: "Id_Products",
+            model: "Product",
+          },
+        });
+        return {
+          orderInfo: order,
+          items,
+        };
+      })
+    );
     if (getAllOrder) {
-      return res.status(200).json({ getAllOrder });
+      return res.status(200).json({ getAllOrder, detailOrderItems });
     }
+
     return res.status(404).json({ message: "Not founded order" });
   } catch (error) {
     return res.status(500).json({ error: error.message });
