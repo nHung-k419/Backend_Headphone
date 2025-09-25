@@ -23,8 +23,8 @@ export const initSocket = (server) => {
       const result = await CreateCommentLike({ UserId: userId, CommentId: commentId });
       // console.log(result);
       io.emit("newLike", result);
-      
     })
+    
   });
 
   return io;

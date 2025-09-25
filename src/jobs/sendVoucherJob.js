@@ -2,74 +2,45 @@ import nodeCron from "node-cron";
 import { Users } from "../models/User.model.js";
 import { Voucher } from "../models/Voucher.model.js";
 import { Notification } from "../models/Notification.model.js";
-// const { sendEmail } = require("../utils/sendEmail");
 
 nodeCron.schedule("* * * * *", async () => {
-  console.log("🎯 Running voucher check job...");
-
-  const threeDaysAgo = new Date();
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
   const now = new Date();
+  console.log("⏰ Cron chạy lúc:", now);
 
-  const users = await Users.find({
-    CreateAt: {
-      $gte: threeDaysAgo, // lớn hơn hoặc bằng 3 ngày trước
-      $lte: now, // nhỏ hơn hoặc bằng thời điểm hiện tại
-    },
-    VoucherSent: { $ne: "NEWUSER50" },
+  const vouchers = await Voucher.find({
+    status: "Hoạt động",
+    isActive: true,
+    startDate: { $lte: now },
+    expiresAt: { $gte: now },
   });
 
-  if (users.length === 0) return console.log("⏳ No users to send voucher");
+  console.log("Voucher tìm được:", vouchers.length);
 
-  const voucher = await Voucher.findOne({ code: "NEWUSER50" });
+  for (const voucher of vouchers) {
+    // lấy user chưa có voucher này
+    const users = await Users.find({
+      VoucherSent: { $nin: [voucher.code] },
+    });
 
-  if (!voucher) return console.log("⚠️ Voucher not found!");
-  if (users && users.length > 0) {
+    console.log(`Voucher ${voucher.code} gửi cho ${users.length} user`);
+
     for (const user of users) {
+      // cập nhật voucher vào user
+      await Users.findByIdAndUpdate(user._id, {
+        $addToSet: { VoucherSent: voucher.code },
+      });
+
+      // tạo nội dung dựa trên voucher
+      const message = `🎉 ${voucher.description} Nhập mã *${voucher.code}* để hưởng ưu đãi đặc biệt!`;
+      console.log("Thông báo:", message);
+
+      // gửi thông báo
       await Notification.create({
         userId: user._id,
-        title: "🎁 Ưu đãi chào mừng khách hàng!",
-        message: `Nhập mã ${voucher.code} để được giảm giá đơn hàng đầu tiên.`,
+        title: voucher.title || "🎁 Ưu đãi mới!",
+        message,
         type: "voucher",
-        createdAt: new Date(),
       });
-
-      // await sendEmail({
-      //   to: user.email,
-      //   subject: "🎁 Nhận mã giảm giá độc quyền cho bạn!",
-      //   html: `<p>Chào mừng bạn đến với hệ thống của chúng tôi. Mã <b>${voucher.code}</b> sẽ giúp bạn tiết kiệm trong đơn hàng đầu tiên!</p>`,
-      // });
-
-      user.VoucherSent.push(voucher.code);
-      await user.save();
-    }
-    console.log(`✅ Sent voucher to ${users.length} users`);
-  }
-  // VOUCHER SỰ KIỆN 2/9/2025
-  const eventStart = new Date("2025-08-09T00:00:00");
-  const eventEnd = new Date("2025-09-02T23:59:59");
-  if (now >= eventStart && now <= eventEnd) { 
-    const eventVoucher = await Voucher.findOne({ code: "QUOCKHANH29" });
-
-    if (eventVoucher) {
-      const eventUsers = await Users.find({
-        VoucherSent: { $ne: "QUOCKHANH29" },
-      });
-
-      for (const user of eventUsers) {
-        await Notification.create({
-          userId: user._id,
-          title: "🔥 Khuyến mãi Mừng Quốc Khánh 2/9!",
-          message: `Nhân dịp đại lễ Quốc Khánh 2-9 Soundora dành tăng quý khách gói voucher giảm giá 30% cho 1 đơn hàng bất kỳ. Nhập mã ${eventVoucher.code} để hưởng ưu đãi đặc biệt.`,
-          type: "voucher",
-          createdAt: now,
-        });
-
-        user.VoucherSent.push(eventVoucher.code);
-        await user.save();
-      }
-      console.log(`✅ Sent QUOCKHANH29 to ${eventUsers.length} users`);
     }
   }
 });

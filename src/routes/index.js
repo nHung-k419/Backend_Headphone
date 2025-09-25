@@ -53,12 +53,13 @@ import { sendImageComment, getReviewsById, getAllReviews } from "../controller/R
 import { CreateCommentLike, getLikeComment } from "../controller/CommentLike.controller.js";
 import { handleChat } from "../controller/Chatbot.Controller.js";
 import { requestCancle, getAllCancleRequests, updateStatusCancleRequest } from "../controller/cancel_requests .Controller.js";
-import { CreateVoucher, checkVoucher } from "../controller/Voucher.Controller.js";
+import { CreateVoucher, checkVoucher, getAllVouchers } from "../controller/Voucher.Controller.js";
 import { getNotificationById, markAsRead } from "../controller/Notifacation.Controller.js";
 import VerifyAuth from "../middleWare/Verify.js";
 import uploadCloud from "../config/CloudinaryConfig.js";
 import Decentralization from "../middleWare/Decentralization.js";
 import { getDistricts, getProvinces, getWards } from "../controller/Location.Controller.js";
+import { addMessage, createQuestion, GetAllConversation, getConversation } from "../controller/Q&A.Controller.js";
 const router = express.Router();
 // Product Route
 router.post("/CreateProduct", uploadCloud.single("ImageUrl"), createProduct);
@@ -146,6 +147,7 @@ router.post("/chat", handleChat);
 // Voucher Route
 router.post("/CreateVoucher", CreateVoucher);
 router.post("/checkVoucher", checkVoucher);
+router.get("/getAllVouchers", getAllVouchers);
 // Notification Route
 router.get("/getNotificationById/:id", getNotificationById);
 router.post("/markAsRead/:id", markAsRead);
@@ -153,4 +155,10 @@ router.post("/markAsRead/:id", markAsRead);
 router.get("/getProvinces", getProvinces);
 router.get("/getDistricts/:code", getDistricts);
 router.get("/getWards/:code", getWards);
+
+// QuestionAnwser 
+router.post("/createQuestion", createQuestion);
+router.post("/addMessage", addMessage);
+router.get("/GetAllConversation/:productId", GetAllConversation);
+router.get("/getConversation/:questionId", getConversation);
 export default router;

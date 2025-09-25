@@ -2,40 +2,44 @@ import { Voucher } from "../models/Voucher.model.js";
 import { Order } from "../models/Order.model.js";
 const CreateVoucher = async (req, res) => {
   try {
-    const { code, description, discountType, discountValue, minOrderValue, maxDiscount } = req.body;
-    // console.log(req.body);
-
+    const { code, description, discountType,title, discountValue, minOrderValue, maxDiscount, totalUsageLimit, startDate, expiresAt } = req.body;
+    const isExitsVoucher = await Voucher.findOne({ code });
+    if (isExitsVoucher) {
+      return res.status(400).json({ message: "Voucher đã tồn tại!" });
+    }
     const newVoucher = new Voucher({
       code,
       description,
       discountType,
+      title,
       discountValue,
       minOrderValue,
       maxDiscount,
-      startDate: new Date(),
-      expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      totalUsageLimit,
+      startDate,
+      expiresAt,
     });
     // console.log(newVoucher);
 
     const result = await newVoucher.save();
-    console.log(result);
-
     if (!result) {
-      return res.status(400).json({ message: "Voucher not created" });
+      return res.status(400).json({ message: "Lỗi khi tạo voucher!" });
     }
     return res.status(201).json({
-      message: "Voucher created successfully",
+      message: "Tạo voucher thành công!",
     });
-  } catch (error) {}
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 };
 
 const checkVoucher = async (req, res) => {
   const { code, orderTotal, idUser } = req.body;
 
   try {
-    const isUsedVoucher = await Order.findOne({ Id_User: idUser, voucherCode: code});
+    const isUsedVoucher = await Order.findOne({ Id_User: idUser, voucherCode: code });
     console.log(isUsedVoucher);
-    
+
     const voucher = await Voucher.findOne({ code });
 
     if (!voucher) {
@@ -81,4 +85,13 @@ const checkVoucher = async (req, res) => {
   }
 };
 
-export { CreateVoucher, checkVoucher };
+const getAllVouchers = async (req, res) => {
+  try {
+    const vouchers = await Voucher.find();
+    res.status(200).json(vouchers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export { CreateVoucher, checkVoucher,getAllVouchers };

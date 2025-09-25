@@ -16,6 +16,10 @@ const voucherSchema = new mongoose.Schema(
       enum: ["percentage", "fixed"], // 'percentage' = %, 'fixed' = số tiền
       required: true,
     },
+    title: {
+      type: String,
+      required: true,
+    },
     discountValue: {
       type: Number,
       required: true,
@@ -47,9 +51,14 @@ const voucherSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    status: {
+      type: String,
+      enum: ["Hoạt động", "Không hoạt động", "Hết hạn"],
+      default: "Hoạt động",
+    },
   },
   { timestamps: true }
 );
 
-const Voucher =  mongoose.model("Voucher", voucherSchema);
+const Voucher = mongoose.model("Voucher", voucherSchema);
 export { Voucher };
