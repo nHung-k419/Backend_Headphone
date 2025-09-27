@@ -96,7 +96,7 @@ const paymentWithZalopay = async (req, res) => {
   const items = [{ Id_Cart, Id_User, Phone, Fullname, Address, PaymentMethod, _id, Email }];
 
   const embed_data = {
-    redirecturl: "https://backend-headphone.onrender.com/OrderItems",
+    redirecturl: "https://soundora-store.onrender.com/OrderItems",
   };
   // console.log(items);
 
