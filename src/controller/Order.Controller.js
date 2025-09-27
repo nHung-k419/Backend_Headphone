@@ -37,11 +37,10 @@ const getOrder = async (req, res) => {
 };
 
 const CreateOrder = async (req, res) => {
-  // let TotalAmount = 0;
   const { Id_Cart, idUser, Phone, Fullname, Address, TotalAmount, PaymentMethod, voucherCode, Email } = req.body;
-  // console.log("total", TotalAmount);
 
   try {
+    // Step 1: Lấy Cart Items
     const CartItemsOrder = await CartItems.find({ Id_Cart: Id_Cart }).populate({
       path: "Id_ProductVariants",
       model: "ProductVariants",
@@ -50,17 +49,22 @@ const CreateOrder = async (req, res) => {
         model: "Product",
       },
     });
-    const resultFind = await Cart.findOne({ Id_User: idUser });
-    // if (resultFind) {
-    //   // const resultOrder = await CartItems.find({ Id_Cart: resultFind._id }).populate("Id_Product");
-    //   TotalAmount = CartItemsOrder.reduce((sum, item) => {
-    //     sum += item.Quantity * item?.Id_ProductVariants?.Price;
-    //     return sum;
-    //   }, 0);
-    // }
 
-    const resultCreate = new Order({ Id_Cart, Id_User: idUser, Fullname, Phone, TotalAmount, voucherCode, PaymentMethod, Address, Email });
+    // Step 2: Tạo Order
+    const resultCreate = new Order({
+      Id_Cart,
+      Id_User: idUser,
+      Fullname,
+      Phone,
+      TotalAmount,
+      voucherCode,
+      PaymentMethod,
+      Address,
+      Email,
+    });
     await resultCreate.save();
+
+    // Step 3: Chuẩn bị dữ liệu OrderItems
     const OrderItemsDate = CartItemsOrder.map((item) => ({
       Id_Order: resultCreate._id,
       Id_ProductVariants: item.Id_ProductVariants._id,
@@ -72,31 +76,48 @@ const CreateOrder = async (req, res) => {
       Quantity: item.Quantity,
     }));
 
-    // console.log("OrderItemsDate", OrderItemsDate);
+    // ✅ Trả response ngay cho client
+    res.status(200).json({ resultCreate });
 
-    await OrderItems.insertMany(OrderItemsDate);
+    // 🔄 Các tác vụ chạy ngầm (không block response)
+    ;(async () => {
+      try {
+        // Insert OrderItems
+        await OrderItems.insertMany(OrderItemsDate);
 
-    for (const items of CartItemsOrder) {
-      await ProductVariants.updateOne({ _id: items.Id_ProductVariants._id }, { $inc: { Stock: -items.Quantity, Sold: items.Quantity } });
-    }
+        // Update tồn kho
+        for (const items of CartItemsOrder) {
+          await ProductVariants.updateOne(
+            { _id: items.Id_ProductVariants._id },
+            { $inc: { Stock: -items.Quantity, Sold: items.Quantity } }
+          );
+        }
 
-    if (PaymentMethod === "COD") {
-      await CartItems.deleteMany({ Id_Cart: Id_Cart });
-      await mailAcceptOrder(Email, Fullname, resultCreate._id, resultCreate.CreateAt, OrderItemsDate, TotalAmount);
-    }
+        // Xử lý thanh toán COD → xóa cart + gửi mail
+        if (PaymentMethod === "COD") {
+          await CartItems.deleteMany({ Id_Cart: Id_Cart });
+          await mailAcceptOrder(Email, Fullname, resultCreate._id, resultCreate.CreateAt, OrderItemsDate, TotalAmount);
+        }
 
-    return res.status(200).json({ resultCreate });
+        console.log("Background job done: update stock + mail sent");
+      } catch (err) {
+        console.error("Background job error:", err);
+      }
+    })();
+
   } catch (error) {
+    console.error("CreateOrder error:", error);
     return res.status(500).json({ error: error.message });
   }
 };
+
 const paymentWithZalopay = async (req, res) => {
   let total = 0;
   const { Id_Cart, Id_User, Phone, Fullname, Address, _id, PaymentMethod, Email } = req.body;
   const items = [{ Id_Cart, Id_User, Phone, Fullname, Address, PaymentMethod, _id, Email }];
 
   const embed_data = {
-    redirecturl: "https://soundora-store.onrender.com/OrderItems",
+    redirecturl: "http://localhost:5173/OrderItems",
   };
   // console.log(items);
 
@@ -123,7 +144,7 @@ const paymentWithZalopay = async (req, res) => {
     amount: total,
     description: `Zalo - Payment for the Headphone #${transID}`,
     bank_code: "",
-    callback_url: "https://soundora-store.onrender.com/api/CallbackOrder",
+    callback_url: "https://7398a8e31435.ngrok-free.app/api/CallbackOrder",
   };
   const data =
     config.app_id +
