@@ -117,7 +117,7 @@ const paymentWithZalopay = async (req, res) => {
   const items = [{ Id_Cart, Id_User, Phone, Fullname, Address, PaymentMethod, _id, Email }];
 
   const embed_data = {
-    redirecturl: "http://localhost:5173/OrderItems",
+    redirecturl: "https://frontend-booking-ovf1.onrender.com/OrderItems",
   };
   // console.log(items);
 
@@ -144,7 +144,7 @@ const paymentWithZalopay = async (req, res) => {
     amount: total,
     description: `Zalo - Payment for the Headphone #${transID}`,
     bank_code: "",
-    callback_url: "https://7398a8e31435.ngrok-free.app/api/CallbackOrder",
+    callback_url: "https://backend-headphone.onrender.com/api/CallbackOrder",
   };
   const data =
     config.app_id +
