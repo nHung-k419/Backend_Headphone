@@ -42,7 +42,7 @@ const io = initSocket(httpServer);
 // Middlewares
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: "https://soundora-store.onrender.com",
     credentials: true,
   })
 );
