@@ -59,16 +59,15 @@ const checkVoucher = async (req, res) => {
     let discount = 0;
 
     if (voucher.discountType === "percentage") {
-      discount = Math.floor((voucher.discountValue / 100) * orderTotal); // Làm tròn để tránh số lẻ
+      discount = Math.floor((voucher.discountValue / 100) * orderTotal); 
     } else {
       discount = voucher.discountValue;
     }
     // console.log(discount);
 
-    // Nếu bạn có giới hạn giảm tối đa
-    // if (voucher.maxDiscount && discount > voucher.maxDiscount) {
-    //   discount = voucher.maxDiscount;
-    // }
+    if (voucher.maxDiscount && discount > voucher.maxDiscount) {
+      discount = voucher.maxDiscount;
+    }
 
     const discountedTotal = orderTotal - discount;
     // console.log(discountedTotal);

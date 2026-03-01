@@ -40,7 +40,6 @@ const CreateOrder = async (req, res) => {
   const { Id_Cart, idUser, Phone, Fullname, Address, TotalAmount, PaymentMethod, voucherCode, Email } = req.body;
 
   try {
-    // Step 1: Lấy Cart Items
     const CartItemsOrder = await CartItems.find({ Id_Cart: Id_Cart }).populate({
       path: "Id_ProductVariants",
       model: "ProductVariants",
@@ -50,7 +49,6 @@ const CreateOrder = async (req, res) => {
       },
     });
 
-    // Step 2: Tạo Order
     const resultCreate = new Order({
       Id_Cart,
       Id_User: idUser,
@@ -64,7 +62,7 @@ const CreateOrder = async (req, res) => {
     });
     await resultCreate.save();
 
-    // Step 3: Chuẩn bị dữ liệu OrderItems
+
     const OrderItemsDate = CartItemsOrder.map((item) => ({
       Id_Order: resultCreate._id,
       Id_ProductVariants: item.Id_ProductVariants._id,
@@ -76,11 +74,11 @@ const CreateOrder = async (req, res) => {
       Quantity: item.Quantity,
     }));
 
-    // ✅ Trả response ngay cho client
+
     res.status(200).json({ resultCreate });
 
-    // 🔄 Các tác vụ chạy ngầm (không block response)
-    ;(async () => {
+
+    ; (async () => {
       try {
         // Insert OrderItems
         await OrderItems.insertMany(OrderItemsDate);
@@ -117,7 +115,7 @@ const paymentWithZalopay = async (req, res) => {
   const items = [{ Id_Cart, Id_User, Phone, Fullname, Address, PaymentMethod, _id, Email }];
 
   const embed_data = {
-    redirecturl: "https://soundora-store.onrender.com/OrderItems",
+    redirecturl: "http://localhost:5173/OrderItems",
   };
   // console.log(items);
 
@@ -144,7 +142,7 @@ const paymentWithZalopay = async (req, res) => {
     amount: total,
     description: `Zalo - Payment for the Headphone #${transID}`,
     bank_code: "",
-    callback_url: "https://backend-headphone.onrender.com/api/CallbackOrder",
+    callback_url: "https://7398a8e31435.ngrok-free.app/api/CallbackOrder",
   };
   const data =
     config.app_id +
@@ -259,7 +257,9 @@ const getOrderItems = async (req, res) => {
 const getAddressOrder = async (req, res) => {
   const { Id_User } = req.params;
   try {
-    const findAdressOrder = await Order.findOne({ Id_User: Id_User }).sort({ CreateAt: -1 });
+    const findAdressOrder = await Order
+      .findOne({ Id_User })
+      .sort({ _id: -1 });
     return res.status(200).json({ findAdressOrder });
   } catch (error) {
     return res.status(500).json({ error: error.message });

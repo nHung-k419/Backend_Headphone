@@ -40,7 +40,7 @@ const handleChat = async (req, res) => {
             parts: [{ text: prompt }],
           },
         ],
-      },
+      },  
       {
         headers: {
           "Content-Type": "application/json",

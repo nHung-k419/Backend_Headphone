@@ -149,7 +149,7 @@ const getProductFilter = async (req, res) => {
     const valuePrice = parseFloat(req.query.valuePrice);
     const keyWord = req.query.keyWord;
     const type = req.query.type;
-    console.log(type);
+    // console.log(type);
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
