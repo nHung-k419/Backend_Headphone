@@ -9,20 +9,23 @@ import { createServer } from "http";
 import { initSocket } from "./socket/socket.js";
 import { Users } from "./models/User.model.js";
 import { ProductVariants } from "./models/Product_Variants.js";
+import { Server } from "socket.io";
 import "./jobs/sendVoucherJob.js"
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app); // 👈 Tạo HTTP server từ Express
-const io = initSocket(httpServer);
+// const io = initSocket(httpServer);
 // Setup Socket.IO
-// const io = new Server(httpServer, {
-//   cors: {
-//     origin: "https://soundora-store.onrender.com",
-//     credentials: true,
-//   },
-// });
-
+const io = new Server(httpServer, {
+  cors: {
+    origin: "https://soundora-store.onrender.com",
+    credentials: true,
+  },
+});
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
+});
 // // Socket.IO event setup
 // io.on("connection", (socket) => {
 //   console.log("⚡ Client connected: ", socket.id);
