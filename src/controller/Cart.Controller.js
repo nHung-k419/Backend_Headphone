@@ -1,56 +1,146 @@
 import { Cart } from "../models/Cart.model.js";
 import { CartItems } from "../models/Cart_items.model.js";
 import { Products } from "../models/Product.model.js";
+import { ProductVariants } from "../models/Product_Variants.js";
+// const AddCart = async (req, res) => {
+//   const { idUser } = req.params;
+//   const { Id_ProductVariants, quantity, Size, Color, Image, Price } = req.body;
+
+//   try {
+//     // 1. Tìm hoặc tạo Cart
+//     let cart = await Cart.findOne({ Id_User: idUser });
+//     let productVariants = await ProductVariants.findOne({ _id: Id_ProductVariants });
+//     console.log('productVariants', productVariants);
+
+//     if (!cart) {
+//       const cartCreate = await new Cart({ Id_User: idUser }).save();
+//       if (cartCreate) {
+//         await new CartItems({
+//           Id_Cart: cartCreate._id,
+//           Id_ProductVariants,
+//           Size,
+//           Color,
+//           Price,
+//           Quantity: quantity,
+//           Image,
+//         }).save();
+//       }
+//     } else {
+//       // 2. Tìm sản phẩm trong CartItems
+//       const existingItem = await CartItems.findOne({
+//         Id_Cart: cart._id,
+//         Id_ProductVariants,
+//         Color,
+//       });
+//       console.log('existingItem', existingItem);
+
+
+//       if (existingItem) {
+//         if (existingItem.Quantity >= productVariants.Stock) {
+//           return res.status(400).json({ message: "Số lượng vượt quá tồn kho" });
+//         }
+//         // Nếu đã có sản phẩm → tăng số lượng
+//         await CartItems.updateOne({ _id: existingItem._id }, { $inc: { Quantity: 1 } });
+
+//       } else {
+//         // Nếu chưa có → thêm mới
+//         await new CartItems({
+//           Id_Cart: cart._id,
+//           Id_ProductVariants,
+//           Size,
+//           Color,
+//           Price,
+//           Quantity: quantity,
+//           Image,
+//         }).save();
+//       }
+//     }
+//     return res.status(201).json({ message: "Cart updated successfully" });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
 const AddCart = async (req, res) => {
   const { idUser } = req.params;
-  const { Id_ProductVariants, quantity, Size, Color, Image, Price } = req.body;
+  const { Id_ProductVariants, quantity = 1, Size, Color, Image, Price } = req.body;
 
   try {
-    // 1. Tìm hoặc tạo Cart
-    let cart = await Cart.findOne({ Id_User: idUser });
-    if (!cart) {
-      const cartCreate = await new Cart({ Id_User: idUser }).save();
-      if (cartCreate) {
-        await new CartItems({
-          Id_Cart: cartCreate._id,
-          Id_ProductVariants,
-          Size,
-          Color,
-          Price,
-          Quantity: quantity,
-          Image,
-        }).save();
+    //Tìm product variant
+    const productVariant = await ProductVariants.findById(Id_ProductVariants);
+
+    if (!productVariant) {
+      return res.status(404).json({ message: "Sản phẩm không tồn tại" });
+    }
+
+    //Kiểm tra tồn kho
+    if (productVariant.Stock <= 0) {
+      return res.status(400).json({ message: "Sản phẩm đã hết hàng" });
+    }
+
+    //Tìm hoặc tạo cart
+    let cart = await Cart.findOneAndUpdate(
+      { Id_User: idUser },
+      { $setOnInsert: { Id_User: idUser } },
+      { new: true, upsert: true }
+    );
+
+    //Kiểm tra sản phẩm đã có trong cart chưa
+    const existingItem = await CartItems.findOne({
+      Id_Cart: cart._id,
+      Id_ProductVariants,
+      Color,
+    });
+
+    if (existingItem) {
+
+      const newQuantity = existingItem.Quantity + quantity;
+
+      // check stock
+      if (newQuantity > productVariant.Stock) {
+        return res.status(400).json({
+          message: `Chỉ còn ${productVariant.Stock} sản phẩm trong kho`,
+        });
       }
+
+      // update quantity
+      await CartItems.updateOne(
+        { _id: existingItem._id },
+        { $inc: { Quantity: quantity } }
+      );
+
     } else {
-      // 2. Tìm sản phẩm trong CartItems
-      const existingItem = await CartItems.findOne({
+
+      if (quantity > productVariant.Stock) {
+        return res.status(400).json({
+          message: `Chỉ còn ${productVariant.Stock} sản phẩm trong kho`,
+        });
+      }
+
+      await CartItems.create({
         Id_Cart: cart._id,
         Id_ProductVariants,
+        Size,
         Color,
+        Price,
+        Quantity: quantity,
+        Image,
       });
-
-      if (existingItem) {
-        // Nếu đã có sản phẩm → tăng số lượng
-        await CartItems.updateOne({ _id: existingItem._id }, { $inc: { Quantity: 1 } });
-      } else {
-        // Nếu chưa có → thêm mới
-        await new CartItems({
-          Id_Cart: cart._id,
-          Id_ProductVariants,
-          Size,
-          Color,
-          Price,
-          Quantity: quantity,
-          Image,
-        }).save();
-      }
     }
-    return res.status(201).json({ message: "Cart updated successfully" });
+
+    return res.status(200).json({
+      message: "Thêm sản phẩm vào giỏ hàng thành công",
+    });
+
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    console.error("AddCart error:", error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };
+
 async function getCartWithItems(cartId) {
   const cart = await Cart.findById(cartId);
   const items = await CartItems.find({ Id_Cart: cartId }).populate({
@@ -74,21 +164,21 @@ const GetCartByUser = async (req, res) => {
     // console.log(result);
 
 
-      // get cart items from linked document product
-      const resultCartItems = await CartItems.find({ Id_Cart: result._id }).populate({
-        path: "Id_ProductVariants",
-        model: "ProductVariants",
-        populate: {
-          path: "Id_Products",
-          model: "Product",
-        },
-      });
-      // console.log(resultCartItems);
+    // get cart items from linked document product
+    const resultCartItems = await CartItems.find({ Id_Cart: result._id }).populate({
+      path: "Id_ProductVariants",
+      model: "ProductVariants",
+      populate: {
+        path: "Id_Products",
+        model: "Product",
+      },
+    });
+    // console.log(resultCartItems);
 
-     
-        return res.status(200).json({ resultCartItems });
-      
-    
+
+    return res.status(200).json({ resultCartItems });
+
+
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

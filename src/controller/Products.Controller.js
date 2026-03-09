@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Favourite } from "../models/Favourite.model.js";
 import { Products } from "../models/Product.model.js";
 import { ProductVariants } from "../models/Product_Variants.js";
@@ -7,7 +8,7 @@ const { v2: cloudinary } = pkg;
 
 const createProduct = async (req, res) => {
   try {
-    const { Name, Price, Description, Brand, Id_Category } = req.body;
+    const { Name, Price, Description, Brand, Id_Category, Specifications } = req.body;
     const ImageUrl = req.file;
     console.log(Brand);
 
@@ -20,6 +21,7 @@ const createProduct = async (req, res) => {
         Description,
         Brand,
         Id_Category,
+        Specifications: Specifications ? JSON.parse(Specifications) : {},
       });
       const result = await newProduct.save();
       if (result) {
@@ -88,7 +90,7 @@ const deleteProduct = async (req, res) => {
 };
 const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { Name, Price, Description, Brand, Id_Category } = req.body;
+  const { Name, Price, Description, Brand, Id_Category, Specifications } = req.body;
   const ImageUrl = req.file;
   // console.log(ImageUrl.path);
 
@@ -105,6 +107,7 @@ const updateProduct = async (req, res) => {
           Description,
           Brand,
           Id_Category,
+          Specifications: Specifications ? JSON.parse(Specifications) : resultId.Specifications,
         },
       }
     );
@@ -332,6 +335,57 @@ const getFavouriteByUser = async (req, res) => {
 //   }
 // };
 
+const compareProducts = async (req, res) => {
+  try {
+    const { ids } = req.query;
+    if (!ids) {
+      return res.status(400).json({ message: "Product IDs are required" });
+    }
+    const idArray = ids.split(",");
+
+    const products = await Products.aggregate([
+      {
+        $match: {
+          _id: { $in: idArray.map((id) => new mongoose.Types.ObjectId(id)) },
+        },
+      },
+      {
+        $lookup: {
+          from: "productvariants",
+          localField: "_id",
+          foreignField: "Id_Products",
+          as: "variants",
+        },
+      },
+      {
+        $addFields: {
+          minPrice: { $min: "$variants.Price" },
+          maxPrice: { $max: "$variants.Price" },
+        },
+      },
+      {
+        $addFields: {
+          maxVariant: {
+            $arrayElemAt: [
+              {
+                $filter: {
+                  input: "$variants",
+                  cond: { $eq: ["$$this.Price", "$minPrice"] },
+                },
+              },
+              0,
+            ],
+          },
+        },
+      },
+    ]);
+
+    return res.status(200).json({ data: products });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 export {
   createProduct,
   getProduct,
@@ -345,6 +399,7 @@ export {
   newProduct,
   handleAddFavourite,
   getFavouriteByUser,
+  compareProducts,
   // selectTypeProduct,
 };
 

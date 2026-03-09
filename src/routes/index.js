@@ -11,7 +11,8 @@ import {
   newProduct,
   getProduct,
   handleAddFavourite,
-  getFavouriteByUser
+  getFavouriteByUser,
+  compareProducts
   // selectTypeProduct
 } from "../controller/Products.Controller.js";
 import { GetAllCategory, AddCategory, UpdateCategory, DeleteCategory } from "../controller/Category.Controller.js";
@@ -47,7 +48,7 @@ import {
   GetAllOrder,
   GetAllOrderItems,
   updateStatusOrder,
-  
+
 } from "../controller/Order.Controller.js";
 import { sendImageComment, getReviewsById, getAllReviews } from "../controller/Reviews.Controller.js";
 import { CreateCommentLike, getLikeComment } from "../controller/CommentLike.controller.js";
@@ -73,6 +74,7 @@ router.get("/newProduct", newProduct);
 router.get("/GetAllProduct", getProduct);
 router.post("/handleAddFavourite", handleAddFavourite);
 router.get("/getFavouriteByUser/:idUser", getFavouriteByUser);
+router.get("/CompareProducts", compareProducts);
 // router.get("/selectTypeProduct/:type", selectTypeProduct);
 
 // Category Route

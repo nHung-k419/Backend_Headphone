@@ -3,10 +3,10 @@ import axios from "axios";
 import { ProductVariants } from "../models/Product_Variants.js";
 
 const buildPrompt = (question, products) => {
-//  const ac = products.map((p) => p.Id_Products.Name)qư
-//  console.log(products);
- 
-  
+  //  const ac = products.map((p) => p.Id_Products.Name)qư
+  //  console.log(products);
+
+
   const productDescriptions = products
     .map(
       (p) =>
@@ -32,7 +32,7 @@ const handleChat = async (req, res) => {
     const prompt = buildPrompt(question, products);
 
     const geminiRes = await axios.post(
-      "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent",
       {
         contents: [
           {
@@ -40,7 +40,7 @@ const handleChat = async (req, res) => {
             parts: [{ text: prompt }],
           },
         ],
-      },  
+      },
       {
         headers: {
           "Content-Type": "application/json",
@@ -50,7 +50,7 @@ const handleChat = async (req, res) => {
     );
 
     const aiReply = geminiRes.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-   return res.json({ answer: aiReply || "Không có phản hồi từ AI" });
+    return res.json({ answer: aiReply || "Không có phản hồi từ AI" });
   } catch (error) {
     console.error("Lỗi chat:", error.response?.data || error.message);
     res.status(500).json({

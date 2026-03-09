@@ -9,6 +9,8 @@ import moment from "moment";
 import CryptoJS from "crypto-js";
 import axios from "axios";
 import { ProductVariants } from "../models/Product_Variants.js";
+import { getSocket } from "../socket/socket.js";
+import { Notification } from "../models/Notification.model.js";
 const config = {
   app_id: "2554",
   key1: "sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn",
@@ -115,7 +117,7 @@ const paymentWithZalopay = async (req, res) => {
   const items = [{ Id_Cart, Id_User, Phone, Fullname, Address, PaymentMethod, _id, Email }];
 
   const embed_data = {
-    redirecturl: "http://localhost:5173/OrderItems",
+    redirecturl: "https://soundora-store.onrender.com/OrderItems",
   };
   // console.log(items);
 
@@ -278,28 +280,46 @@ const getStatusOrder = async (req, res) => {
 
 const GetAllOrder = async (req, res) => {
   try {
-    const getAllOrder = await Order.find({}).sort({ createdAt: -1 });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Tổng số đơn hàng
+    const totalOrders = await Order.countDocuments();
+
+    // Lấy danh sách đơn hàng theo trang
+    const orders = await Order.find({})
+      .sort({ _id: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Lấy chi tiết từng đơn
     const detailOrderItems = await Promise.all(
-      getAllOrder.map(async (order) => {
-        const items = await OrderItems.find({ Id_Order: order._id }).populate({
-          path: "Id_ProductVariants",
-          model: "ProductVariants",
-          populate: {
-            path: "Id_Products",
-            model: "Product",
-          },
-        });
+      orders.map(async (order) => {
+        const items = await OrderItems.find({ Id_Order: order._id })
+          .populate({
+            path: "Id_ProductVariants",
+            model: "ProductVariants",
+            populate: {
+              path: "Id_Products",
+              model: "Product",
+            },
+          });
+
         return {
           orderInfo: order,
           items,
         };
       })
     );
-    if (getAllOrder) {
-      return res.status(200).json({ getAllOrder, detailOrderItems });
-    }
 
-    return res.status(404).json({ message: "Not founded order" });
+    return res.status(200).json({
+      currentPage: page,
+      totalPages: Math.ceil(totalOrders / limit),
+      totalOrders,
+      data: detailOrderItems,
+    });
+
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
@@ -316,20 +336,56 @@ const GetAllOrderItems = async (req, res) => {
   }
 };
 const updateStatusOrder = async (req, res) => {
+  const io = getSocket();
   const { id } = req.params;
   const { status } = req.body;
+
   try {
-    if (status === "Xác nhận") {
-      const result = await Order.updateOne({ _id: id }, { $set: { Status: "Chờ giao hàng" } });
-      return res.status(200).json({ result });
-    } else if (status === "Đã giao") {
-      const result = await Order.findOne({ _id: id });
-      if (result.Status === "Chờ giao hàng") {
-        const result = await Order.updateOne({ _id: id }, { $set: { Status: "Đã giao" } });
-        return res.status(200).json({ "update status": "success" });
-      }
-      return res.status(400).json({ "update status": "fail" });
+    // Lấy order
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
     }
+
+    let newStatus = "";
+
+    // Xử lý logic chuyển trạng thái
+    if (status === "Xác nhận") {
+      newStatus = "Chờ giao hàng";
+      await Notification.create({
+        userId: order.Id_User,
+        title: "Thông báo từ hệ thống!",
+        message: `Đơn hàng có mã ${order._id} đã được xác nhận!`,
+      });
+    }
+    else if (status === "Đã giao" && order.Status === "Chờ giao hàng") {
+      newStatus = "Đã giao";
+      await Notification.create({
+        userId: order.Id_User,
+        title: "Thông báo từ hệ thống!",
+        message: `Đơn hàng có mã ${order._id} đã được giao!`,
+      });
+    }
+    else {
+      return res.status(400).json({ message: "Invalid status transition" });
+    }
+    // Update DB
+    order.Status = newStatus;
+    await order.save();
+    console.log('order.Id_User', order);
+
+    // Emit realtime đúng user
+    io.to(order.Id_User.toString()).emit("order-status-updated", {
+      orderId: order._id,
+      status: newStatus,
+    });
+
+    return res.status(200).json({
+      message: "Update success",
+      order,
+    });
+
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

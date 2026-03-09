@@ -12,17 +12,13 @@ export const initSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("⚡ Client connected:", socket.id);
-
+    console.log('hi');
     socket.on("sendReview", async (data) => {
-      console.log("📥 Nhận review:", data); // 👈 thêm dòng này
-
       const resultReview = await saveReview(data);
 
+      // 🔥 populate lại user trước khi emit
       const reviewFull = await Reviews.findById(resultReview._id)
         .populate("Id_User", "Name Image");
-
-      console.log("📤 Emit newReview:", reviewFull); // 👈 thêm dòng này
 
       io.emit("newReview", reviewFull);
     });
@@ -31,7 +27,10 @@ export const initSocket = (server) => {
       // console.log(result);
       io.emit("newLike", result);
     })
-
+    socket.on("join", (userId) => {
+      console.log('userId', userId);  
+      socket.join(userId);
+    })
   });
 
   return io;

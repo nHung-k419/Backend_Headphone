@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import SpecificationSchema from "./specifications.js";
 
 const Product_Model = new mongoose.Schema({
   Name: { type: String, required: true },
@@ -12,6 +13,7 @@ const Product_Model = new mongoose.Schema({
   Id_Category: { type: String, required: true },
   Sold: { type: Number, default: 0 },
   isDelete: { type: Boolean, default: false },
+  Specifications: SpecificationSchema,
   CreateAt: { type: Date, default: Date.now() },
 });
 const Products = mongoose.model("Product", Product_Model);
