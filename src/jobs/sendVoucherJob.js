@@ -2,45 +2,109 @@ import nodeCron from "node-cron";
 import { Users } from "../models/User.model.js";
 import { Voucher } from "../models/Voucher.model.js";
 import { Notification } from "../models/Notification.model.js";
+import { getSocket } from "../socket/socket.js";
 
-nodeCron.schedule("* * * * *", async () => {
-  const now = new Date();
-  console.log("⏰ Cron chạy lúc:", now);
-
-  const vouchers = await Voucher.find({
+// Lấy voucher hợp lệ
+const getActiveVouchers = async (now) => {
+  return await Voucher.find({
     status: "Hoạt động",
     isActive: true,
     startDate: { $lte: now },
     expiresAt: { $gte: now },
   });
+};
 
-  console.log("Voucher tìm được:", vouchers.length);
+// Lấy user chưa nhận voucher
+const getUsersWithoutVoucher = async (voucherCode) => {
+  return await Users.find({
+    VoucherSent: { $nin: [voucherCode] },
+  }).select("_id");
+};
 
-  for (const voucher of vouchers) {
-    // lấy user chưa có voucher này
-    const users = await Users.find({
-      VoucherSent: { $nin: [voucher.code] },
-    });
+// Update user đã nhận voucher
+const updateUsersVoucher = async (userIds, voucherCode) => {
+  await Users.updateMany(
+    { _id: { $in: userIds } },
+    { $addToSet: { VoucherSent: voucherCode } }
+  );
+};
 
-    console.log(`Voucher ${voucher.code} gửi cho ${users.length} user`);
+// Tạo notification
+const createNotifications = async (userIds, voucher) => {
+  const notifications = userIds.map((id) => ({
+    userId: id,
+    title: voucher.title || "🎁 Ưu đãi mới!",
+    message: `🎉 ${voucher.description} Nhập mã ${voucher.code} để hưởng ưu đãi!`,
+    type: "voucher",
+  }));
 
-    for (const user of users) {
-      // cập nhật voucher vào user
-      await Users.findByIdAndUpdate(user._id, {
-        $addToSet: { VoucherSent: voucher.code },
-      });
+  return await Notification.insertMany(notifications);
+};
 
-      // tạo nội dung dựa trên voucher
-      const message = `🎉 ${voucher.description} Nhập mã *${voucher.code}* để hưởng ưu đãi đặc biệt!`;
-      console.log("Thông báo:", message);
+// Gửi realtime socket
+const emitNotifications = (io, notifications) => {
+  notifications.forEach((noti) => {
+    io.to(noti.userId.toString()).emit("new-notification", noti);
+  });
+};
 
-      // gửi thông báo
-      await Notification.create({
-        userId: user._id,
-        title: voucher.title || "🎁 Ưu đãi mới!",
-        message,
-        type: "voucher",
-      });
+// Check voucher hết hạn 
+const checkIsExpiredVoucher = async () => {
+  const now = new Date();
+
+  const result = await Voucher.updateMany(
+    { expiresAt: { $lt: now }, status: { $ne: "Hết hạn" } },
+    { $set: { status: "Hết hạn" } }
+  );
+  // console.log('result', result);
+
+  if (result.modifiedCount > 0) {
+    console.log(`Đã cập nhật ${result.modifiedCount} voucher hết hạn`);
+  }
+
+  return result;
+};
+
+// xử lý gửi voucher cho user
+const processVoucher = async (voucher, io) => {
+  const users = await getUsersWithoutVoucher(voucher.code);
+
+  if (!users.length) return;
+
+  console.log(`Voucher ${voucher.code} gửi cho ${users.length} user`);
+
+  const userIds = users.map((u) => u._id);
+
+  await updateUsersVoucher(userIds, voucher.code);
+
+  const insertedNotifications = await createNotifications(userIds, voucher);
+
+  emitNotifications(io, insertedNotifications);
+};
+
+nodeCron.schedule("*/10 * * * *", async () => {
+  const io = getSocket();
+
+  if (!io) {
+    console.log("Socket chưa init");
+    return;
+  }
+
+  try {
+    const now = new Date();
+
+    console.log("Socket đã init");
+    console.log("Cron chạy lúc:", now);
+    await checkIsExpiredVoucher();
+    const vouchers = await getActiveVouchers(now);
+
+    if (!vouchers.length) return;
+
+    for (const voucher of vouchers) {
+      await processVoucher(voucher, io);
     }
+
+  } catch (error) {
+    console.error("Cron notification error:", error);
   }
 });

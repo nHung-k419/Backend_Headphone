@@ -54,7 +54,7 @@ import { sendImageComment, getReviewsById, getAllReviews } from "../controller/R
 import { CreateCommentLike, getLikeComment } from "../controller/CommentLike.controller.js";
 import { handleChat } from "../controller/Chatbot.Controller.js";
 import { requestCancle, getAllCancleRequests, updateStatusCancleRequest } from "../controller/cancel_requests .Controller.js";
-import { CreateVoucher, checkVoucher, getAllVouchers } from "../controller/Voucher.Controller.js";
+import { CreateVoucher, checkVoucher, getAllVouchers, getVouchersActive } from "../controller/Voucher.Controller.js";
 import { getNotificationById, markAsRead } from "../controller/Notifacation.Controller.js";
 import VerifyAuth from "../middleWare/Verify.js";
 import uploadCloud from "../config/CloudinaryConfig.js";
@@ -150,6 +150,7 @@ router.post("/chat", handleChat);
 router.post("/CreateVoucher", CreateVoucher);
 router.post("/checkVoucher", checkVoucher);
 router.get("/getAllVouchers", getAllVouchers);
+router.get("/getVouchersActive", getVouchersActive);
 // Notification Route
 router.get("/getNotificationById/:id", getNotificationById);
 router.post("/markAsRead/:id", markAsRead);

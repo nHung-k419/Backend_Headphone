@@ -12,11 +12,10 @@ export const initSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log('hi');
     socket.on("sendReview", async (data) => {
       const resultReview = await saveReview(data);
 
-      // 🔥 populate lại user trước khi emit
+      // populate lại user trước khi emit
       const reviewFull = await Reviews.findById(resultReview._id)
         .populate("Id_User", "Name Image");
 

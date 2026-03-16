@@ -212,7 +212,21 @@ const handlePrevious = async (req, res) => {
 const handleNext = async (req, res) => {
   const { Id_ProductVariants, Id_Cart, Color } = req.body;
   try {
-    await CartItems.updateOne({ Id_Cart, Id_ProductVariants, Color }, { $inc: { Quantity: 1 } });
+    const item = await CartItems.findOne({ Id_Cart, Id_ProductVariants, Color }).populate("Id_ProductVariants");
+    if (!item) {
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm trong giỏ hàng" });
+    }
+
+    const variant = item.Id_ProductVariants;
+    if (!variant) {
+      return res.status(404).json({ message: "Biến thể sản phẩm không tồn tại" });
+    }
+
+    if (item.Quantity >= variant.Stock) {
+      return res.status(400).json({ message: "Số lượng vượt quá tồn kho" });
+    }
+
+    await CartItems.updateOne({ _id: item._id }, { $inc: { Quantity: 1 } });
 
     return res.status(200).json({ message: "Tăng số lượng thành công" });
   } catch (error) {

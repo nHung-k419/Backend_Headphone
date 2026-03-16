@@ -22,6 +22,10 @@ const notificationSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  linkRef: {
+    type: String,
+    default: ""
+  },
   createdAt: {
     type: Date,
     default: Date.now,

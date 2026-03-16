@@ -261,7 +261,7 @@ const productBestSeller = async (req, res) => {
         model: "Product",
       })
       .sort({ Sold: -1 })
-      .limit(20);
+      .limit(10);
     const AllProductSellerReviews = await Promise.all(
       result.map(async (item) => {
         const reviews = await Reviews.find({ Id_Product: item.Id_Products._id });

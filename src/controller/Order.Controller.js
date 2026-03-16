@@ -353,29 +353,23 @@ const updateStatusOrder = async (req, res) => {
     // Xử lý logic chuyển trạng thái
     if (status === "Xác nhận") {
       newStatus = "Chờ giao hàng";
-      await Notification.create({
-        userId: order.Id_User,
-        title: "Thông báo từ hệ thống!",
-        message: `Đơn hàng có mã ${order._id} đã được xác nhận!`,
-      });
-    }
-    else if (status === "Đã giao" && order.Status === "Chờ giao hàng") {
-      newStatus = "Đã giao";
-      await Notification.create({
-        userId: order.Id_User,
-        title: "Thông báo từ hệ thống!",
-        message: `Đơn hàng có mã ${order._id} đã được giao!`,
-      });
-    }
-    else {
-      return res.status(400).json({ message: "Invalid status transition" });
+    } else if (status === "Chờ giao hàng") {
+      newStatus = "Đã giao hàng";
     }
     // Update DB
     order.Status = newStatus;
     await order.save();
     console.log('order.Id_User', order);
 
+    const newNotification = await Notification.create({
+      userId: order.Id_User,
+      title: "Thông báo từ hệ thống!",
+      message: `Đơn hàng có mã ${order._id} ${newStatus === "Chờ giao hàng" ? "đã được xác nhận" : "đã được giao"}!`,
+    });
+
     // Emit realtime đúng user
+    io.to(order.Id_User.toString()).emit("new-notification", newNotification);
+
     io.to(order.Id_User.toString()).emit("order-status-updated", {
       orderId: order._id,
       status: newStatus,
