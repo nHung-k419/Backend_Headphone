@@ -282,13 +282,31 @@ const GetAllOrder = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
+    const status = req.query.status || "Tất cả";
     const skip = (page - 1) * limit;
 
-    // Tổng số đơn hàng
-    const totalOrders = await Order.countDocuments();
+    // Filter Query Mongoose
+    let query = {};
+    if (search) {
+      query.$or = [
+        { Fullname: { $regex: search, $options: "i" } },
+        { Address: { $regex: search, $options: "i" } }
+      ];
+    }
+    if (status !== "Tất cả") {
+        if (status === "Đang chờ") {
+            query.Status = { $regex: "Chờ", $options: "i" };
+        } else {
+            query.Status = status;
+        }
+    }
+
+    // Tổng số đơn hàng (có tính filter)
+    const totalOrders = await Order.countDocuments(query);
 
     // Lấy danh sách đơn hàng theo trang
-    const orders = await Order.find({})
+    const orders = await Order.find(query)
       .sort({ _id: -1 })
       .skip(skip)
       .limit(limit);
@@ -339,6 +357,7 @@ const updateStatusOrder = async (req, res) => {
   const io = getSocket();
   const { id } = req.params;
   const { status } = req.body;
+  console.log('status', status);
 
   try {
     // Lấy order
@@ -353,7 +372,7 @@ const updateStatusOrder = async (req, res) => {
     // Xử lý logic chuyển trạng thái
     if (status === "Xác nhận") {
       newStatus = "Chờ giao hàng";
-    } else if (status === "Chờ giao hàng") {
+    } else if (status === "Đã giao") {
       newStatus = "Đã giao hàng";
     }
     // Update DB

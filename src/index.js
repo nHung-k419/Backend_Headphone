@@ -27,13 +27,22 @@ app.use(
 app.use(express.json({ limit: "1000mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.get("/", (req, res) => {
+  res.status(200).send("Backend is running 🚀");
+});
 app.use("/api", router);
 
 const PORT = process.env.PORT || 3000;
 
 // Kết nối MongoDB và chạy server
-connectDB().then(() => {
-  httpServer.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
+connectDB()
+  .then(() => {
+    console.log("DB connected");
+  })
+  .catch((err) => {
+    console.error("DB error:", err);
   });
+
+httpServer.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
